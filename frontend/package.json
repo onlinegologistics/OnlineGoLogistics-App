@@ -1,0 +1,12 @@
+{
+  "name": "onlinegologistics-frontend",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix OnlineGoLogistics run dev --",
+    "start": "npm --prefix OnlineGoLogistics start --",
+    "web": "npm --prefix OnlineGoLogistics run web --",
+    "android": "npm --prefix OnlineGoLogistics run android --",
+    "ios": "npm --prefix OnlineGoLogistics run ios --",
+    "lint": "npm --prefix OnlineGoLogistics run lint --"
+  }
+}
