@@ -33,7 +33,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.get('/', (req, res) => {
-    res.send('app.onlinegologistics.in (Your backend is live)');
+    res.send('(Your backend is live)');
 });
 
 // Auth routes
