@@ -16,20 +16,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: 'backend/package-lock.json'
-
-      # Install backend dependencies to verify build/install succeeds
-      - name: Install dependencies
-        run: |
-          cd backend
-          npm ci || npm install
-
-      # Deploy files to VPS using SCP
+      # Deploy files to VPS using SCP (excluding node_modules to speed up transfer)
       - name: Copy backend files to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -37,7 +24,7 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
-          source: "backend/*"
+          source: "backend/**,!backend/node_modules/**"
           target: ${{ secrets.VPS_TARGET_DIR }}
           strip_components: 0
 
