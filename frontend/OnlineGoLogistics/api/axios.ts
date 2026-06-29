@@ -1,13 +1,10 @@
 import axios from "axios";
-import Constants from "expo-constants";
-import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const getBaseUrl = () => {
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
   }
-
-  // Fallback strictly to production to prevent local IP leaking in release builds
   return "https://app.onlinegologistics.in";
 };
 
@@ -20,7 +17,13 @@ export const api = axios.create({
 
 console.log("API Instance Created with BaseURL:", api.defaults.baseURL);
 
-api.interceptors.request.use((config) => {
+// Single unified request interceptor: attaches token + logs
+api.interceptors.request.use(async (config) => {
+  const token = await AsyncStorage.getItem("auth_token");
+  if (token) {
+    config.headers = config.headers ?? {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
   return config;
 }, (error) => {
