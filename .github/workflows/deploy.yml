@@ -1,0 +1,56 @@
+name: Deploy Backend to VPS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy.yml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      # Install backend dependencies to verify build/install succeeds
+      - name: Install dependencies
+        run: |
+          cd backend
+          npm ci || npm install
+
+      # Deploy files to VPS using SCP
+      - name: Copy backend files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          source: "backend/*"
+          target: ${{ secrets.VPS_TARGET_DIR }}
+          strip_components: 0
+
+      # Execute remote commands to install production dependencies and restart app
+      - name: Execute remote ssh commands to deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            cd ${{ secrets.VPS_TARGET_DIR }}/backend
+            npm install --production
+            # Restart the app using pm2 (assuming pm2 is installed on the VPS)
+            pm2 restart server.js --name "onlinego-backend" || pm2 start server.js --name "onlinego-backend"
