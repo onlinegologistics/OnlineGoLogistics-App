@@ -33,7 +33,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.get('/', (req, res) => {
-    res.send('Luggage Billing API is running');
+    res.send('app.onlinegologistics.in (Your backend is live)');
 });
 
 // Auth routes
