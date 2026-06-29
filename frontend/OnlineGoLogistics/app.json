@@ -17,6 +17,18 @@
         "INTERNET"
       ],
       "versionCode": 2,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "splash": {
+        "image": "./assets/images/transparent.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#0B1528",
+        "dark": {
+          "backgroundColor": "#0B1528"
+        }
+      },
       "package": "com.onlinegologistics",
       "googleServicesFile": "./google-services.json"
     },
@@ -31,8 +43,6 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/icon.png",
-          "resizeMode": "contain",
           "backgroundColor": "#0B1528",
           "dark": {
             "backgroundColor": "#0B1528"
