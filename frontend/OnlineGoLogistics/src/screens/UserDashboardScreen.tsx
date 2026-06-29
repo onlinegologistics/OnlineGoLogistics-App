@@ -38,6 +38,7 @@ import { DARK_GLASS_THEME } from "../../constants/theme";
 import { removeToken } from "../../utils/token";
 import { getProfileApi } from "../../api/auth";
 import { getNotificationsApi, markAsReadApi, NotificationResponse } from "../../api/notification";
+import Toast from 'react-native-toast-message';
 
 const emptyDashboard: CustomerDashboard = {
   totalBookings: 0,
@@ -136,14 +137,11 @@ export default function UserDashboardScreen() {
     try {
       setSubmitting(true);
       await addShipmentRecords(payloads);
-      Alert.alert(
-        "Success",
-        "Shipment records submitted successfully"
-      );
+      Toast.show({ type: 'success', text1: "Success", text2: "Shipment records submitted successfully" });
       await loadDashboard();
       setActiveTab("shipments");
     } catch (error: any) {
-      Alert.alert("Submit Failed", error?.response?.data?.message || "Could not submit shipment record");
+      Toast.show({ type: 'error', text1: "Submit Failed", text2: error?.response?.data?.message || "Could not submit shipment record" });
     } finally {
       setSubmitting(false);
     }
@@ -151,7 +149,7 @@ export default function UserDashboardScreen() {
 
   const trackNow = async () => {
     if (!trackingId.trim()) {
-      Alert.alert("Tracking ID required", "Please enter booking or tracking ID");
+      Toast.show({ type: 'error', text1: "Tracking ID required", text2: "Please enter booking or tracking ID" });
       return;
     }
 
@@ -159,7 +157,7 @@ export default function UserDashboardScreen() {
       const result = await trackShipment(trackingId.trim());
       router.push({ pathname: "/drawer/track-shipment", params: { id: result.id } } as any);
     } catch (error: any) {
-      Alert.alert("Tracking Failed", error?.response?.data?.message || "Shipment not found");
+      Toast.show({ type: 'error', text1: "Tracking Failed", text2: error?.response?.data?.message || "Shipment not found" });
     }
   };
 
@@ -272,7 +270,7 @@ export default function UserDashboardScreen() {
       <SupportButton title="Call" icon="call-outline" onPress={() => Linking.openURL("tel:+910000000000")} />
       <SupportButton title="WhatsApp" icon="logo-whatsapp" onPress={() => Linking.openURL("https://wa.me/910000000000")} />
       <SupportButton title="Email" icon="mail-outline" onPress={() => Linking.openURL("mailto:support@onlinegologistics.in")} />
-      <SupportButton title="FAQ" icon="help-buoy-outline" onPress={() => Alert.alert("FAQ", "Support FAQ is ready to connect")} />
+      <SupportButton title="FAQ" icon="help-buoy-outline" onPress={() => Toast.show({ type: 'info', text1: "FAQ", text2: "Support FAQ is ready to connect" })} />
       {showAll && (
         <>
           <SupportButton title="Send Enquiry" icon="chatbubble-ellipses-outline" onPress={() => router.push("/drawer/enquiries" as any)} />
@@ -292,7 +290,7 @@ export default function UserDashboardScreen() {
         <Text style={styles.walletBalance}>₹24,680.50</Text>
         <Pressable
           style={styles.addMoneyButton}
-          onPress={() => Alert.alert("Add Money", "Stripe payment gateway interface connected here")}
+          onPress={() => Toast.show({ type: 'info', text1: "Add Money", text2: "Stripe payment gateway interface connected here" })}
         >
           <LinearGradient
             colors={[DARK_GLASS_THEME.electricBlue, DARK_GLASS_THEME.purple]}

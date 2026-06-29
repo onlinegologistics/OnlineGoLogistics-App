@@ -14,6 +14,7 @@ import { router } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { getMyComplaintsApi, MobileUserComplaintResponse } from "../../api/complaint";
 import { DARK_GLASS_THEME } from "../../constants/theme";
+import Toast from 'react-native-toast-message';
 
 export default function AllComplaintsScreen() {
   const [complaints, setComplaints] = useState<MobileUserComplaintResponse[]>([]);
@@ -25,7 +26,7 @@ export default function AllComplaintsScreen() {
       const data = await getMyComplaintsApi();
       setComplaints(data);
     } catch (e: any) {
-      Alert.alert("Error", e?.response?.data?.message || "Failed to load complaints");
+      Toast.show({ type: 'error', text1: "Error", text2: e?.response?.data?.message || "Failed to load complaints" });
     } finally {
       setLoading(false);
     }

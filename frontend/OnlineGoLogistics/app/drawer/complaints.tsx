@@ -19,6 +19,7 @@ import { router } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { createComplaintApi } from "../../api/complaint";
 import { DARK_GLASS_THEME } from "../../constants/theme";
+import Toast from 'react-native-toast-message';
 
 export default function ComplaintsScreen() {
   const [image, setImage] = useState<string | null>(null);
@@ -31,7 +32,7 @@ export default function ComplaintsScreen() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!permission.granted) {
-      Alert.alert("Permission required", "Please allow gallery access to attach photo proof.");
+      Toast.show({ type: 'error', text1: "Permission required", text2: "Please allow gallery access to attach photo proof." });
       return;
     }
 
@@ -48,7 +49,7 @@ export default function ComplaintsScreen() {
 
   const handleSubmit = async () => {
     if (!subject.trim() || !description.trim() || !receiptNo.trim()) {
-      Alert.alert("Error", "Please fill out Subject, LR/Receipt number, and Description.");
+      Toast.show({ type: 'error', text1: "Error", text2: "Please fill out Subject, LR/Receipt number, and Description." });
       return;
     }
 
@@ -60,14 +61,14 @@ export default function ComplaintsScreen() {
         receiptNo: receiptNo.trim(),
         priority: "Medium",
       });
-      Alert.alert("Success", "Complaint submitted successfully! We will review and contact you soon.");
+      Toast.show({ type: 'success', text1: "Success", text2: "Complaint submitted successfully! We will review and contact you soon." });
       setSubject("");
       setReceiptNo("");
       setDescription("");
       setImage(null);
       router.replace("/drawer/user-dashboard");
     } catch (e: any) {
-      Alert.alert("Error", e?.response?.data?.message || "Failed to submit complaint");
+      Toast.show({ type: 'error', text1: "Error", text2: e?.response?.data?.message || "Failed to submit complaint" });
     } finally {
       setLoading(false);
     }

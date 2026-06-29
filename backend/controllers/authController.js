@@ -3,8 +3,11 @@ const User = require('../models/User');
 const MobileUser = require('../models/MobileUser');
 const OtpVerification = require('../models/OtpVerification');
 const PickupAddress = require('../models/PickupAddress');
+const ParcelRequest = require('../models/ParcelRequest');
+const Luggage = require('../models/Luggage');
 const transporter = require('../config/mailer');
 const mongoose = require('mongoose');
+const firebaseAdmin = require('../config/firebaseAdmin');
 
 // Generate JWT
 const generateToken = (id) => {
@@ -82,6 +85,55 @@ const mergedProfileResponse = async (user) => {
     };
 };
 
+const https = require('https');
+
+const sendOtpFast2SMS = async ({ mobile, otp }) => {
+    console.log(`[Fast2SMS] Attempting to send OTP to ${mobile}: ${otp}`);
+    
+    const apiKey = process.env.FAST2SMS_API_KEY;
+    if (!apiKey) {
+        console.log(`[Fast2SMS] API key missing in .env. Skipping real SMS transmission.`);
+        return false;
+    }
+
+    // Format phone number (remove +91 if present for Fast2SMS as it expects 10 digits)
+    let formattedMobile = mobile.trim();
+    if (formattedMobile.startsWith('+91')) {
+        formattedMobile = formattedMobile.substring(3);
+    } else if (formattedMobile.startsWith('91') && formattedMobile.length === 12) {
+        formattedMobile = formattedMobile.substring(2);
+    }
+
+    return new Promise((resolve) => {
+        const url = `https://www.fast2sms.com/dev/bulkV2?authorization=${encodeURIComponent(apiKey)}&route=otp&variables_values=${encodeURIComponent(otp)}&numbers=${encodeURIComponent(formattedMobile)}`;
+        
+        https.get(url, (res) => {
+            let data = '';
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+            res.on('end', () => {
+                try {
+                    const response = JSON.parse(data);
+                    if (response.return === true) {
+                        console.log(`[Fast2SMS] SMS sent successfully:`, response.message);
+                        resolve(true);
+                    } else {
+                        console.error(`[Fast2SMS] API failed to send SMS:`, response.message);
+                        resolve(false);
+                    }
+                } catch (err) {
+                    console.error(`[Fast2SMS] Failed to parse API response:`, data);
+                    resolve(false);
+                }
+            });
+        }).on('error', (err) => {
+            console.error(`[Fast2SMS] Connection error:`, err.message);
+            resolve(false);
+        });
+    });
+};
+
 const sendOtpEmail = async ({ email, otp, subject }) => {
     if (!email || !process.env.EMAIL_USER || !process.env.EMAIL_PASS) return false;
 
@@ -109,11 +161,7 @@ const sendOtpEmail = async ({ email, otp, subject }) => {
 };
 
 const buildOtpResponse = (message, otp, extra = {}) => {
-    const response = { message, ...extra };
-    if (process.env.NODE_ENV !== 'production' || extra.emailSent === false) {
-        response.devOtp = otp;
-    }
-    return response;
+    return { message, ...extra };
 };
 
 // @desc    Auth user & get token
@@ -612,10 +660,52 @@ const updateProfile = async (req, res) => {
             user.otpExpiry = undefined;
         }
 
+        if (isMobileUser) {
+            if (req.body.name !== undefined) user.customerName = req.body.name;
+            if (req.body.mobile !== undefined) user.mobileNumber = req.body.mobile;
+            if (req.body.address !== undefined) {
+                user.pickupAddress = req.body.address;
+                user.currentLocation = req.body.address;
+            }
+        }
+
         const updated = await user.save();
         if (!isMobileUser) {
             await upsertMobileUserData(updated);
         }
+
+        // --- Sync Profile Updates to Shipments ---
+        if (req.body.name !== undefined || req.body.mobile !== undefined) {
+            const updateFieldsPR = {};
+            const updateFieldsLuggage = {};
+            
+            if (req.body.name !== undefined) {
+                updateFieldsPR.customerName = req.body.name;
+                updateFieldsLuggage.senderName = req.body.name;
+            }
+            if (req.body.mobile !== undefined) {
+                updateFieldsPR.mobileNumber = req.body.mobile;
+                updateFieldsLuggage.senderMobile = req.body.mobile;
+            }
+
+            try {
+                // Update all ParcelRequests for this customer
+                await ParcelRequest.updateMany(
+                    { customer: updated._id },
+                    { $set: updateFieldsPR }
+                );
+                
+                // Update all Luggage shipments for this customer
+                await Luggage.updateMany(
+                    { customer: updated._id },
+                    { $set: updateFieldsLuggage }
+                );
+            } catch (syncErr) {
+                console.error("Error syncing profile to shipments:", syncErr);
+            }
+        }
+        // -----------------------------------------
+
         res.json({ message: 'Profile updated successfully!', user: await mergedProfileResponse(updated) });
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -664,6 +754,95 @@ const addPickupAddress = async (req, res) => {
     }
 };
 
+// @desc    Verify Firebase ID token and login/register mobile user
+// @route   POST /api/auth/firebase-login
+// @access  Public
+const firebaseLogin = async (req, res) => {
+    try {
+        const { idToken } = req.body;
+
+        if (!idToken) {
+            return res.status(400).json({ message: 'Firebase ID Token is required' });
+        }
+
+        if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
+            return res.status(500).json({ message: 'Firebase Admin credentials are not configured on the server' });
+        }
+
+        // Verify Firebase ID Token
+        let decodedToken;
+        try {
+            decodedToken = await firebaseAdmin.auth().verifyIdToken(idToken);
+        } catch (verifyError) {
+            console.error('Firebase ID token verification failed:', verifyError.message);
+            return res.status(401).json({ message: 'Invalid or expired Firebase ID token' });
+        }
+
+        const uid = decodedToken.uid;
+        const phone = decodedToken.phone_number;
+
+        if (!phone) {
+            return res.status(400).json({ message: 'Firebase token verified but does not contain a phone number' });
+        }
+
+        // Search for user in database by matching verified phone number
+        // Extract 10-digit number from phone if needed, since in MobileUser, mobile might be stored without +91 or with it.
+        let mobileDigits = phone.replace(/^\+91/, '').trim(); // Remove +91 code if present
+        
+        let user = await MobileUser.findOne({
+            $or: [
+                { mobile: phone },
+                { mobile: mobileDigits },
+                { mobileNumber: phone },
+                { mobileNumber: mobileDigits }
+            ]
+        });
+
+        if (!user) {
+            // New user, create user record in MongoDB
+            user = await MobileUser.create({
+                name: `User ${mobileDigits}`,
+                username: `user_${mobileDigits}`,
+                email: `phone_${mobileDigits}@onlinegologistics.com`,
+                mobile: mobileDigits,
+                role: 'mobile',
+                isActive: true,
+                customerName: `User ${mobileDigits}`,
+                mobileNumber: mobileDigits,
+                currentStatus: 'Pending',
+                firebaseUid: uid,
+            });
+
+            // Create a PickupAddress record
+            await PickupAddress.create({
+                user: user._id,
+                address: 'Please set your address',
+                isPrimary: true,
+            });
+        } else {
+            // Update firebaseUid if not set
+            if (!user.firebaseUid) {
+                user.firebaseUid = uid;
+                await user.save();
+            }
+        }
+
+        res.json({
+            _id: user._id,
+            name: user.name,
+            username: user.username,
+            email: user.email,
+            mobile: user.mobile,
+            role: user.role,
+            isNewUser: user.currentStatus === 'Pending' || user.name.startsWith('User '),
+            token: generateToken(user._id),
+        });
+    } catch (err) {
+        console.error('Firebase Login Controller Error:', err.message);
+        res.status(500).json({ message: 'Internal server error during Firebase authentication' });
+    }
+};
+
 module.exports = {
     loginUser,
     requestRegistrationOtp,
@@ -680,4 +859,5 @@ module.exports = {
     updateProfile,
     getPickupAddresses,
     addPickupAddress,
+    firebaseLogin,
 };

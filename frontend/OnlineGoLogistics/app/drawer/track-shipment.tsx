@@ -22,6 +22,7 @@ import {
   TrackingDetails,
 } from "../../src/services/logisticsApi";
 import { DARK_GLASS_THEME } from "../../constants/theme";
+import Toast from 'react-native-toast-message';
 
 const PROGRESS_STEPS = [
   "Created",
@@ -54,7 +55,7 @@ export default function TrackShipmentScreen() {
   const handleTrack = async (idToTrack?: string, isRefresh = false) => {
     const id = idToTrack || trackingInput.trim();
     if (!id) {
-      Alert.alert("Validation Error", "Please enter a Tracking ID / LR Number");
+      Toast.show({ type: 'error', text1: "Validation Error", text2: "Please enter a Tracking ID / LR Number" });
       return;
     }
 

@@ -14,6 +14,7 @@ import { router } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { getNotificationsApi, markAsReadApi, markAllAsReadApi, NotificationResponse } from "../../api/notification";
 import { DARK_GLASS_THEME } from "../../constants/theme";
+import Toast from 'react-native-toast-message';
 
 export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
@@ -25,7 +26,7 @@ export default function NotificationsScreen() {
       const data = await getNotificationsApi();
       setNotifications(data);
     } catch (e: any) {
-      Alert.alert("Error", e?.response?.data?.message || "Failed to load notifications");
+      Toast.show({ type: 'error', text1: "Error", text2: e?.response?.data?.message || "Failed to load notifications" });
     } finally {
       setLoading(false);
     }
@@ -40,7 +41,7 @@ export default function NotificationsScreen() {
       await markAllAsReadApi();
       fetchNotifications();
     } catch (e: any) {
-      Alert.alert("Error", e?.response?.data?.message || "Failed to mark all as read");
+      Toast.show({ type: 'error', text1: "Error", text2: e?.response?.data?.message || "Failed to mark all as read" });
     }
   };
 

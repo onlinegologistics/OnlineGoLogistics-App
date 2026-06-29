@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
   Image,
 } from "react-native";
@@ -19,9 +20,9 @@ import {
   requestRegistrationOtpApi,
   verifyRegistrationOtpApi,
 } from "../api/auth";
-import { getHomeRouteForRole } from "../utils/roleRoutes";
 import { saveUserSession } from "../utils/session";
 import { DARK_GLASS_THEME } from "../constants/theme";
+import Toast from 'react-native-toast-message';
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -32,73 +33,62 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [address, setAddress] = useState("");
   const [otp, setOtp] = useState("");
-  const [otpRequested, setOtpRequested] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const requestOtp = async () => {
+  const validateFields = () => {
     if (!name.trim() || !email.trim() || !mobile.trim() || !password || !address.trim()) {
-      Alert.alert("Error", "Name, email, mobile, password and address are required");
-      return;
+      Toast.show({ type: 'error', text1: "Error", text2: "Name, email, mobile, password and address are required" });
+      return false;
     }
-
-    // Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
-      Alert.alert("Validation Error", "Please enter a valid email address");
-      return;
+      Toast.show({ type: 'error', text1: "Validation Error", text2: "Please enter a valid email address" });
+      return false;
     }
-
-    // Mobile format validation (10 digits)
     const mobileRegex = /^[0-9]{10}$/;
     if (!mobileRegex.test(mobile.trim())) {
-      Alert.alert("Validation Error", "Please enter a valid 10-digit mobile number");
-      return;
+      Toast.show({ type: 'error', text1: "Validation Error", text2: "Please enter a valid 10-digit mobile number" });
+      return false;
     }
-
-    // Password format validation (at least 6 characters)
     if (password.length < 6) {
-      Alert.alert("Validation Error", "Password must be at least 6 characters long");
-      return;
+      Toast.show({ type: 'error', text1: "Validation Error", text2: "Password must be at least 6 characters long" });
+      return false;
     }
+    return true;
+  };
+
+  const handleSendOtp = async () => {
+    if (!validateFields()) return;
 
     try {
       setLoading(true);
-      const res = await requestRegistrationOtpApi({
+      // Calls backend registration which sends OTP to their entered Email (Gmail)
+      const payload = {
         name: name.trim(),
         email: email.trim().toLowerCase(),
         mobile: mobile.trim(),
         alternateMobile: showAlternate && alternateMobile.trim() ? alternateMobile.trim() : undefined,
         password,
         address: address.trim(),
-      });
-      setOtpRequested(true);
-      Alert.alert(
-        "OTP Sent",
-        res.devOtp
-          ? `Development OTP: ${res.devOtp}`
-          : "Please check your email or mobile for OTP"
-      );
+      };
+      const res = await requestRegistrationOtpApi(payload);
+      if (res && res.emailSent === false) {
+        Toast.show({ type: 'error', text1: "OTP Failed", text2: "Failed to send email. Please check server Gmail configuration." });
+      } else {
+        setOtpSent(true);
+        Toast.show({ type: 'success', text1: "OTP Sent", text2: `OTP verification code has been sent to your Gmail.` });
+      }
     } catch (error: any) {
-      const errMsg = error?.response?.data?.message || error?.response?.data?.error || "Could not send OTP";
-      Alert.alert(
-        "Registration Failed", 
-        errMsg,
-        [
-          { 
-            text: "Login", 
-            onPress: () => router.replace("/login") 
-          },
-          { text: "OK", style: "cancel" }
-        ]
-      );
+      Toast.show({ type: 'error', text1: "OTP Failed", text2: error?.response?.data?.message || "Could not send OTP" });
     } finally {
       setLoading(false);
     }
   };
 
-  const verifyOtp = async () => {
-    if (!mobile || !otp) {
-      Alert.alert("Error", "Mobile and OTP are required");
+  const handleVerifyAndRegister = async () => {
+    if (!otp || otp.trim().length < 4) {
+      Toast.show({ type: 'error', text1: "Error", text2: "Enter the OTP you received" });
       return;
     }
 
@@ -111,15 +101,12 @@ export default function Register() {
       await saveUserSession(user);
       router.replace("/drawer/user-dashboard");
     } catch (error: any) {
-      const errMsg = error?.response?.data?.message || error?.response?.data?.error || "Invalid OTP";
+      const msg = error?.response?.data?.message || "Verification failed";
       Alert.alert(
-        "OTP Verification Failed", 
-        errMsg,
+        "Registration Failed",
+        msg,
         [
-          { 
-            text: "Login", 
-            onPress: () => router.replace("/login") 
-          },
+          { text: "Login", onPress: () => router.replace("/login") },
           { text: "OK", style: "cancel" }
         ]
       );
@@ -160,94 +147,126 @@ export default function Register() {
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <Text style={styles.subtitle}>Register with mobile OTP verification</Text>
+          <Text style={styles.subtitle}>Register with Gmail OTP verification</Text>
 
-        <Input label="Full Name" value={name} onChangeText={setName} icon="person-outline" />
-        <Input
-          label="Email"
-          value={email}
-          onChangeText={setEmail}
-          icon="mail-outline"
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-        <Input
-          label="Mobile Number"
-          value={mobile}
-          onChangeText={setMobile}
-          icon="call-outline"
-          keyboardType="phone-pad"
-        />
+          <Input label="Full Name" value={name} onChangeText={setName} icon="person-outline" editable={!otpSent} />
+          
+          {/* Email with Gmail OTP */}
+          <View style={[styles.inputBox, otpSent && { borderColor: '#22C55E' }]}>
+            <TextInput
+              placeholder="Email Address"
+              style={styles.input}
+              placeholderTextColor="#94A3B8"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              editable={!otpSent}
+            />
+            <Ionicons name="mail-outline" size={20} color={otpSent ? '#22C55E' : '#94A3B8'} />
+          </View>
 
-        {!showAlternate ? (
-          <Pressable onPress={() => setShowAlternate(true)} style={styles.addAltBtn}>
-            <Text style={styles.addAltText}>+ Add Alternate No</Text>
-          </Pressable>
-        ) : (
+          {/* Verified badge if OTP sent */}
+          {otpSent && (
+            <View style={styles.verifyBadge}>
+              <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
+              <Text style={styles.verifyText}>OTP sent to {email}</Text>
+              <TouchableOpacity onPress={() => { setOtpSent(false); setOtp(""); }}>
+                <Text style={styles.changeText}>  Change</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           <Input
-            label="Alternate Mobile Number"
-            value={alternateMobile}
-            onChangeText={setAlternateMobile}
+            label="Mobile Number (10 digits)"
+            value={mobile}
+            onChangeText={setMobile}
             icon="call-outline"
             keyboardType="phone-pad"
+            editable={!otpSent}
           />
-        )}
-        <Input
-          label="Password"
-          value={password}
-          onChangeText={setPassword}
-          icon="key-outline"
-          secureTextEntry
-        />
-        <Input
-          label="Address"
-          value={address}
-          onChangeText={setAddress}
-          icon="home-outline"
-        />
 
-        {otpRequested && (
+          {!showAlternate ? (
+            <Pressable onPress={() => setShowAlternate(true)} style={styles.addAltBtn} disabled={otpSent}>
+              <Text style={styles.addAltText}>+ Add Alternate No</Text>
+            </Pressable>
+          ) : (
+            <Input
+              label="Alternate Mobile Number"
+              value={alternateMobile}
+              onChangeText={setAlternateMobile}
+              icon="call-outline"
+              keyboardType="phone-pad"
+              editable={!otpSent}
+            />
+          )}
+
           <Input
-            label="OTP"
-            value={otp}
-            onChangeText={setOtp}
-            icon="shield-checkmark-outline"
-            keyboardType="number-pad"
+            label="Password"
+            value={password}
+            onChangeText={setPassword}
+            icon="key-outline"
+            secureTextEntry
+            editable={!otpSent}
           />
-        )}
+          <Input
+            label="Address"
+            value={address}
+            onChangeText={setAddress}
+            icon="home-outline"
+            editable={!otpSent}
+          />
 
-        <Pressable
-          onPress={otpRequested ? verifyOtp : requestOtp}
-          disabled={loading}
-          style={styles.buttonWrapper}
-        >
-          <LinearGradient
-            colors={[DARK_GLASS_THEME.electricBlue, DARK_GLASS_THEME.purple]}
-            style={styles.primaryButton}
+          {/* OTP input - only shows after Gmail OTP sent */}
+          {otpSent && (
+            <View style={[styles.inputBox, { borderColor: DARK_GLASS_THEME.electricBlue }]}>
+              <TextInput
+                placeholder="Enter OTP from Gmail"
+                style={styles.input}
+                placeholderTextColor="#94A3B8"
+                value={otp}
+                onChangeText={setOtp}
+                keyboardType="number-pad"
+                maxLength={6}
+                autoFocus
+              />
+              <Ionicons name="shield-checkmark-outline" size={20} color={DARK_GLASS_THEME.electricBlue} />
+            </View>
+          )}
+
+          {/* Main action button */}
+          <Pressable
+            onPress={otpSent ? handleVerifyAndRegister : handleSendOtp}
+            disabled={loading}
+            style={styles.buttonWrapper}
           >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.primaryText}>
-                {otpRequested ? "VERIFY OTP & REGISTER" : "SEND OTP"}
-              </Text>
-            )}
-          </LinearGradient>
-        </Pressable>
+            <LinearGradient
+              colors={[DARK_GLASS_THEME.electricBlue, DARK_GLASS_THEME.purple]}
+              style={styles.primaryButton}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.primaryText}>
+                  {otpSent ? "✓ VERIFY OTP & REGISTER" : "SEND OTP via Gmail"}
+                </Text>
+              )}
+            </LinearGradient>
+          </Pressable>
 
-        <Pressable onPress={() => router.replace("/login")} style={styles.linkButton}>
-          <Text style={styles.linkText}>Already registered? Login</Text>
-        </Pressable>
-      </ScrollView>
+          <Pressable onPress={() => router.replace("/login")} style={styles.linkButton}>
+            <Text style={styles.linkText}>Already registered? Login</Text>
+          </Pressable>
+        </ScrollView>
       </KeyboardAvoidingView>
     </LinearGradient>
   );
 }
 
-function Input({ label, icon, ...props }: any) {
+function Input({ label, icon, editable = true, ...props }: any) {
   return (
-    <View style={styles.inputBox}>
-      <TextInput placeholder={label} style={styles.input} placeholderTextColor="#94A3B8" {...props} />
+    <View style={[styles.inputBox, !editable && { opacity: 0.5 }]}>
+      <TextInput placeholder={label} style={styles.input} placeholderTextColor="#94A3B8" editable={editable} {...props} />
       <Ionicons name={icon} size={20} color="#94A3B8" />
     </View>
   );
@@ -271,6 +290,24 @@ const styles = StyleSheet.create({
   addAltText: {
     color: "#10B981",
     fontWeight: "800",
+    fontSize: 13,
+  },
+  verifyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: -8,
+    marginBottom: 14,
+    paddingLeft: 4,
+  },
+  verifyText: {
+    color: '#22C55E',
+    fontWeight: '700',
+    fontSize: 13,
+    marginLeft: 6,
+  },
+  changeText: {
+    color: DARK_GLASS_THEME.cyan,
+    fontWeight: '700',
     fontSize: 13,
   },
   /* Glowing Orbs */

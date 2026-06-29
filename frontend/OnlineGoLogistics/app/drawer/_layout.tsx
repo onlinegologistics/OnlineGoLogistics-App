@@ -15,6 +15,7 @@ import {
   Pressable,
   BackHandler,
   Image,
+  DeviceEventEmitter,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
@@ -78,6 +79,15 @@ function CustomDrawerContent(props: any) {
       fetchProfile();
     }
   }, [drawerStatus, fetchProfile]);
+
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener("PROFILE_UPDATED", () => {
+      fetchProfile();
+    });
+    return () => {
+      subscription.remove();
+    };
+  }, [fetchProfile]);
 
   const logout = async () => {
     await removeToken();

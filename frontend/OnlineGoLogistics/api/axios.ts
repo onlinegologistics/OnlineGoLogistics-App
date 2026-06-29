@@ -7,19 +7,8 @@ const getBaseUrl = () => {
     return process.env.EXPO_PUBLIC_API_URL;
   }
 
-  const hostUri =
-    Constants.expoConfig?.hostUri ||
-    (Constants as any).manifest?.debuggerHost ||
-    (Constants as any).manifest2?.extra?.expoGo?.debuggerHost;
-  const host = typeof hostUri === "string" ? hostUri.split(":")[0] : "";
-
-  if (host && host !== "localhost" && host !== "127.0.0.1") {
-    return `http://${host}:5003`;
-  }
-
-  return Platform.OS === "android"
-    ? "http://10.0.2.2:5003" // Android emulator default
-    : "http://localhost:5003";
+  // Fallback strictly to production to prevent local IP leaking in release builds
+  return "https://app.onlinegologistics.in";
 };
 
 export const api = axios.create({

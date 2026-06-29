@@ -21,6 +21,7 @@ import {
   updateShipmentDetails,
 } from "../../src/services/logisticsApi";
 import { DARK_GLASS_THEME } from "../../constants/theme";
+import Toast from 'react-native-toast-message';
 
 type Draft = {
   customerName: string;
@@ -107,7 +108,7 @@ export default function ShipmentDetailsScreen() {
       setShipment(data);
       setDraft(toDraft(data));
     } catch (error: any) {
-      Alert.alert("Shipment Error", error?.response?.data?.message || "Could not load shipment details");
+      Toast.show({ type: 'error', text1: "Shipment Error", text2: error?.response?.data?.message || "Could not load shipment details" });
     } finally {
       setLoading(false);
     }
@@ -140,22 +141,22 @@ export default function ShipmentDetailsScreen() {
 
     const missing = required.find((field) => !draft[field].trim());
     if (missing) {
-      Alert.alert("Validation", "Please fill all required shipment fields");
+      Toast.show({ type: 'error', text1: "Validation", text2: "Please fill all required shipment fields" });
       return false;
     }
 
     if (!/^[0-9]{10}$/.test(draft.mobileNumber.trim())) {
-      Alert.alert("Validation", "Enter a valid 10 digit mobile number");
+      Toast.show({ type: 'error', text1: "Validation", text2: "Enter a valid 10 digit mobile number" });
       return false;
     }
 
     if (Number.isNaN(Number(draft.parcelWeight))) {
-      Alert.alert("Validation", "Weight should be numeric");
+      Toast.show({ type: 'error', text1: "Validation", text2: "Weight should be numeric" });
       return false;
     }
 
     if (!Number.isInteger(Number(draft.quantity)) || Number(draft.quantity) <= 0) {
-      Alert.alert("Validation", "Quantity should be a positive number");
+      Toast.show({ type: 'error', text1: "Validation", text2: "Quantity should be a positive number" });
       return false;
     }
 
@@ -186,9 +187,9 @@ export default function ShipmentDetailsScreen() {
       setShipment(updated);
       setDraft(toDraft(updated));
       setEditing(false);
-      Alert.alert("Success", "Shipment updated successfully");
+      Toast.show({ type: 'success', text1: "Success", text2: "Shipment updated successfully" });
     } catch (error: any) {
-      Alert.alert("Update Failed", error?.response?.data?.message || "Could not update shipment");
+      Toast.show({ type: 'error', text1: "Update Failed", text2: error?.response?.data?.message || "Could not update shipment" });
     } finally {
       setSaving(false);
     }

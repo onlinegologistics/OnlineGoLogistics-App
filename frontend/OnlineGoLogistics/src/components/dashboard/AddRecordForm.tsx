@@ -7,10 +7,10 @@ import {
   Text,
   TextInput,
   View,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import Toast from 'react-native-toast-message';
 import {
   AddShipmentPayload,
   AddressSuggestion,
@@ -88,7 +88,7 @@ export default function AddRecordForm({
 
   const handleAddLocation = async () => {
     if (!newAddressVal.trim()) {
-      Alert.alert("Error", "Please enter a valid address");
+      Toast.show({ type: 'error', text1: "Error", text2: "Please enter a valid address" });
       return;
     }
     try {
@@ -100,9 +100,9 @@ export default function AddRecordForm({
       setNewAddressCity("");
       await fetchAddresses();
       setSharedValue("pickupAddress", newAddr.address);
-      Alert.alert("Success", "Pickup address added successfully!");
+      Toast.show({ type: 'success', text1: "Success", text2: "Pickup address added successfully!" });
     } catch (err: any) {
-      Alert.alert("Error", err?.response?.data?.message || "Failed to add address");
+      Toast.show({ type: 'error', text1: "Error", text2: err?.response?.data?.message || "Failed to add address" });
     } finally {
       setSavingNewAddress(false);
     }

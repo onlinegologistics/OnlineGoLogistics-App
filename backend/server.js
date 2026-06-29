@@ -9,6 +9,11 @@ connectDB();
 
 const app = express();
 
+app.use((req, res, next) => {
+    console.log(`[Server Log] Request path: ${req.method} ${req.originalUrl}`);
+    next();
+});
+
 const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [];
 
 app.use(cors({

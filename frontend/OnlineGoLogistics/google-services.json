@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "475750523072",
+    "project_id": "onlinegologistics-4b66b",
+    "storage_bucket": "onlinegologistics-4b66b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:475750523072:android:7a22a77e804baf4d284d25",
+        "android_client_info": {
+          "package_name": "com.onlinegologistics"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUCdQ-1ARf6pGmiZj6WuD0Hp6fLizMqPs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -17,6 +17,7 @@ import { router } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { createEnquiryApi } from "../../api/enquiry";
 import { DARK_GLASS_THEME } from "../../constants/theme";
+import Toast from 'react-native-toast-message';
 
 export default function EnquiriesScreen() {
   const [enquiryType, setEnquiryType] = useState("");
@@ -26,7 +27,7 @@ export default function EnquiriesScreen() {
 
   const handleSubmit = async () => {
     if (!enquiryType.trim() || !subject.trim() || !message.trim()) {
-      Alert.alert("Error", "Please fill out Enquiry Type, Subject, and Message.");
+      Toast.show({ type: 'error', text1: "Error", text2: "Please fill out Enquiry Type, Subject, and Message." });
       return;
     }
 
@@ -37,13 +38,13 @@ export default function EnquiriesScreen() {
         subject: subject.trim(),
         message: message.trim(),
       });
-      Alert.alert("Success", "Enquiry submitted successfully! We will get back to you soon.");
+      Toast.show({ type: 'success', text1: "Success", text2: "Enquiry submitted successfully! We will get back to you soon." });
       setEnquiryType("");
       setSubject("");
       setMessage("");
       router.replace("/drawer/user-dashboard");
     } catch (e: any) {
-      Alert.alert("Error", e?.response?.data?.message || "Failed to submit enquiry");
+      Toast.show({ type: 'error', text1: "Error", text2: e?.response?.data?.message || "Failed to submit enquiry" });
     } finally {
       setLoading(false);
     }

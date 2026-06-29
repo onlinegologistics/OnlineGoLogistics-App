@@ -14,6 +14,7 @@ import { router } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { getMyEnquiriesApi, MobileUserEnquiryResponse } from "../../api/enquiry";
 import { DARK_GLASS_THEME } from "../../constants/theme";
+import Toast from 'react-native-toast-message';
 
 export default function AllEnquiriesScreen() {
   const [enquiries, setEnquiries] = useState<MobileUserEnquiryResponse[]>([]);
@@ -25,7 +26,7 @@ export default function AllEnquiriesScreen() {
       const data = await getMyEnquiriesApi();
       setEnquiries(data);
     } catch (e: any) {
-      Alert.alert("Error", e?.response?.data?.message || "Failed to load enquiries");
+      Toast.show({ type: 'error', text1: "Error", text2: e?.response?.data?.message || "Failed to load enquiries" });
     } finally {
       setLoading(false);
     }

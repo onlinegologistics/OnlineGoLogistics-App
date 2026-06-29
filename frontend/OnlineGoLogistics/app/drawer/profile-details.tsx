@@ -13,6 +13,7 @@ import {
   View,
   KeyboardAvoidingView,
   Platform,
+  DeviceEventEmitter,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -22,6 +23,7 @@ import { useFocusEffect, router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getProfileApi, updateProfileApi, UserProfile } from "../../api/auth";
 import { DARK_GLASS_THEME } from "../../constants/theme";
+import Toast from 'react-native-toast-message';
 
 const emptyProfile: UserProfile = {
   _id: "",
@@ -62,7 +64,7 @@ export default function ProfileDetails() {
     try {
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert("Permission required", "Please allow gallery access to update your profile photo.");
+        Toast.show({ type: 'error', text1: "Permission required", text2: "Please allow gallery access to update your profile photo." });
         return;
       }
 
@@ -80,7 +82,7 @@ export default function ProfileDetails() {
         setShowPhotoModal(true);
       }
     } catch (err: any) {
-      Alert.alert("Error", err.message || "Could not select image");
+      Toast.show({ type: 'error', text1: "Error", text2: err.message || "Could not select image" });
     }
   };
 
@@ -94,9 +96,10 @@ export default function ProfileDetails() {
       setProfile(res.user);
       setDraft(res.user);
       await AsyncStorage.setItem("userName", res.user.name || "");
-      Alert.alert("Success", "Profile photo updated successfully!");
+      DeviceEventEmitter.emit('PROFILE_UPDATED');
+      Toast.show({ type: 'success', text1: "Success", text2: "Profile photo updated successfully!" });
     } catch (err: any) {
-      Alert.alert("Error", err.message || "Could not update profile photo");
+      Toast.show({ type: 'error', text1: "Error", text2: err.message || "Could not update profile photo" });
     } finally {
       setSaving(false);
       setPreviewPhoto(null);
@@ -117,7 +120,7 @@ export default function ProfileDetails() {
       setProfile(data);
       setDraft(data);
     } catch (error: any) {
-      Alert.alert("Profile Error", error?.response?.data?.message || "Could not load profile");
+      Toast.show({ type: 'error', text1: "Profile Error", text2: error?.response?.data?.message || "Could not load profile" });
     } finally {
       setLoading(false);
     }
@@ -135,22 +138,22 @@ export default function ProfileDetails() {
 
   const saveProfile = async () => {
     if (!draft.name?.trim()) {
-      Alert.alert("Validation", "Name is required");
+      Toast.show({ type: 'error', text1: "Validation", text2: "Name is required" });
       return;
     }
 
     if (!draft.username?.trim()) {
-      Alert.alert("Validation", "Username is required");
+      Toast.show({ type: 'error', text1: "Validation", text2: "Username is required" });
       return;
     }
 
     if (draft.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim())) {
-      Alert.alert("Validation", "Enter a valid email address");
+      Toast.show({ type: 'error', text1: "Validation", text2: "Enter a valid email address" });
       return;
     }
 
     if (draft.mobile && !/^[0-9]{10}$/.test(draft.mobile.trim())) {
-      Alert.alert("Validation", "Enter a valid 10 digit mobile number");
+      Toast.show({ type: 'error', text1: "Validation", text2: "Enter a valid 10 digit mobile number" });
       return;
     }
 
@@ -167,10 +170,11 @@ export default function ProfileDetails() {
       setProfile(res.user);
       setDraft(res.user);
       await AsyncStorage.setItem("userName", res.user.name || "");
+      DeviceEventEmitter.emit('PROFILE_UPDATED');
       setEditing(false);
-      Alert.alert("Success", "Profile updated successfully");
+      Toast.show({ type: 'success', text1: "Success", text2: "Profile updated successfully" });
     } catch (error: any) {
-      Alert.alert("Update Failed", error?.response?.data?.message || "Could not update profile");
+      Toast.show({ type: 'error', text1: "Update Failed", text2: error?.response?.data?.message || "Could not update profile" });
     } finally {
       setSaving(false);
     }

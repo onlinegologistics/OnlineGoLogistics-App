@@ -21,20 +21,23 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { DARK_GLASS_THEME } from '../constants/theme';
+import Toast from 'react-native-toast-message';
 
 const { height } = Dimensions.get('window');
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [otp, setOtp] = useState("");
   const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
-  const [otpRequested, setOtpRequested] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Email OTP state
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
 
   const handleLogin = async () => {
     if (!username || !password) {
-      Alert.alert("Error", "Username and password are required");
+      Toast.show({ type: 'error', text1: "Error", text2: "Username and password are required" });
       return;
     }
 
@@ -49,55 +52,60 @@ export default function Login() {
         await saveUserSession(res);
         router.replace(getHomeRouteForRole(res.role) as any);
       } else {
-        Alert.alert("Error", "Login succeeded but token is missing");
+        Toast.show({ type: 'error', text1: "Error", text2: "Login succeeded but token is missing" });
       }
     } catch (error: any) {
-      Alert.alert(
-        "Login Failed",
-        error?.response?.data?.message || "Invalid credentials or network error"
-      );
+      Toast.show({
+        type: 'error',
+        text1: "Login Failed",
+        text2: error?.response?.data?.message || "Invalid credentials or network error"
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOtpRequest = async () => {
-    if (!username) {
-      Alert.alert("Error", "Enter mobile, email or username");
+  const handleSendOtp = async () => {
+    const trimmed = username.trim();
+    if (!trimmed) {
+      Toast.show({ type: 'error', text1: "Error", text2: "Enter your username, email, or mobile number" });
       return;
     }
 
     try {
       setLoading(true);
-      const res = await requestLoginOtpApi({ identifier: username.trim().toLowerCase() });
-      setOtpRequested(true);
-      Alert.alert(
-        "OTP Sent",
-        res.devOtp ? `Development OTP: ${res.devOtp}` : "Please check your email or mobile for OTP"
-      );
+      // Calls backend which finds the user and sends OTP to their registered Gmail (email)
+      const res = await requestLoginOtpApi({ identifier: trimmed.toLowerCase() });
+      if (res && res.emailSent === false) {
+        Toast.show({ type: 'error', text1: "OTP Failed", text2: "Failed to send email. Please check server Gmail configuration." });
+      } else {
+        setOtpSent(true);
+        Toast.show({ type: 'success', text1: "OTP Sent", text2: `OTP verification code has been sent to your registered Gmail address.` });
+      }
     } catch (error: any) {
-      Alert.alert("OTP Failed", error?.response?.data?.message || "Could not send OTP");
+      Toast.show({ type: 'error', text1: "OTP Failed", text2: error?.response?.data?.message || "Could not send OTP" });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOtpLogin = async () => {
-    if (!username || !otp) {
-      Alert.alert("Error", "Identifier and OTP are required");
+  const handleVerifyOtp = async () => {
+    const trimmedIdentifier = username.trim().toLowerCase();
+    if (!otp || otp.trim().length < 4) {
+      Toast.show({ type: 'error', text1: "Error", text2: "Enter the OTP you received" });
       return;
     }
 
     try {
       setLoading(true);
       const res = await verifyLoginOtpApi({
-        identifier: username.trim().toLowerCase(),
+        identifier: trimmedIdentifier,
         otp: otp.trim(),
       });
       await saveUserSession(res);
       router.replace(getHomeRouteForRole(res.role) as any);
     } catch (error: any) {
-      Alert.alert("OTP Login Failed", error?.response?.data?.message || "Invalid OTP");
+      Toast.show({ type: 'error', text1: "Verification Failed", text2: error?.response?.data?.message || "Invalid OTP" });
     } finally {
       setLoading(false);
     }
@@ -147,7 +155,7 @@ export default function Login() {
         <View style={styles.modeRow}>
           <TouchableOpacity
             style={[styles.modeButton, loginMode === "password" && styles.activeMode]}
-            onPress={() => setLoginMode("password")}
+            onPress={() => { setLoginMode("password"); setOtpSent(false); }}
           >
             <Text style={[styles.modeText, loginMode === "password" && styles.activeModeText]}>
               Password
@@ -155,114 +163,134 @@ export default function Login() {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.modeButton, loginMode === "otp" && styles.activeMode]}
-            onPress={() => setLoginMode("otp")}
+            onPress={() => { setLoginMode("otp"); setOtpSent(false); }}
           >
             <Text style={[styles.modeText, loginMode === "otp" && styles.activeModeText]}>
-              OTP
+              Gmail OTP
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Username */}
+        {/* Username/Email/Mobile input */}
         <View style={styles.inputBox}>
           <TextInput
-            placeholder={loginMode === "otp" ? "Mobile / Email" : "Username"}
+            placeholder={loginMode === "otp" ? "Mobile / Email / Username" : "Username"}
             placeholderTextColor="#94A3B8"
             style={styles.input}
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
+            editable={!otpSent}
           />
           <Ionicons name="person-outline" size={20} color="#94A3B8" />
         </View>
 
-        {/* Password */}
         {loginMode === "password" ? (
-          <View style={styles.inputBox}>
-            <TextInput
-              placeholder="Password"
-              placeholderTextColor="#94A3B8"
-              secureTextEntry
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-            />
-            <Ionicons name="key-outline" size={20} color="#94A3B8" />
-          </View>
+          <>
+            {/* Password */}
+            <View style={styles.inputBox}>
+              <TextInput
+                placeholder="Password"
+                placeholderTextColor="#94A3B8"
+                secureTextEntry
+                style={styles.input}
+                value={password}
+                onChangeText={setPassword}
+              />
+              <Ionicons name="key-outline" size={20} color="#94A3B8" />
+            </View>
+
+            {/* Options */}
+            <View style={styles.optionsRow}>
+              <Text style={styles.remember}>☑ Remember Me</Text>
+              <Text style={styles.forgot}>Forgot Password?</Text>
+            </View>
+          </>
         ) : (
           <>
-            {otpRequested ? (
+            {/* Send OTP Button */}
+            {!otpSent && (
+              <TouchableOpacity
+                style={styles.sendOtpBtn}
+                onPress={handleSendOtp}
+                disabled={loading}
+              >
+                <LinearGradient
+                  colors={[DARK_GLASS_THEME.electricBlue, DARK_GLASS_THEME.purple]}
+                  style={styles.sendOtpGrad}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={styles.sendOtpText}>Send OTP to registered Gmail</Text>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
+
+            {/* OTP Input */}
+            {otpSent && (
               <>
-                <View style={styles.inputBox}>
+                <View style={[styles.inputBox, { borderColor: DARK_GLASS_THEME.electricBlue }]}>
                   <TextInput
-                    placeholder="OTP"
+                    placeholder="Enter OTP from Gmail"
                     placeholderTextColor="#94A3B8"
                     style={styles.input}
                     value={otp}
                     onChangeText={setOtp}
                     keyboardType="number-pad"
+                    maxLength={6}
                   />
-                  <Ionicons name="shield-checkmark-outline" size={20} color="#94A3B8" />
+                  <Ionicons name="shield-checkmark-outline" size={20} color={DARK_GLASS_THEME.electricBlue} />
                 </View>
                 <TouchableOpacity
-                  style={styles.otpButton}
-                  onPress={handleOtpRequest}
-                  disabled={loading}
+                  style={styles.resendBtn}
+                  onPress={() => { setOtpSent(false); setOtp(""); }}
                 >
-                  <Text style={styles.otpText}>Resend OTP</Text>
+                  <Text style={styles.resendText}>← Change Details / Resend OTP</Text>
                 </TouchableOpacity>
               </>
-            ) : null}
+            )}
           </>
         )}
-
-        {/* Options */}
-        <View style={styles.optionsRow}>
-          <Text style={styles.remember}>☑ Remember Me</Text>
-          <Text style={styles.forgot}>Forgot Password?</Text>
-        </View>
       </View>
 
       {/* BOTTOM ACTION AREA */}
       <View style={styles.bottomArea}>
-        <TouchableOpacity
-          style={styles.buttonContainer}
-          onPress={
-            loginMode === "password"
-              ? handleLogin
-              : otpRequested
-                ? handleOtpLogin
-                : handleOtpRequest
-          }
-          disabled={loading}
-        >
-          <LinearGradient
-            colors={[DARK_GLASS_THEME.electricBlue, DARK_GLASS_THEME.purple]}
-            style={styles.button}
+        {(loginMode === "password" || otpSent) && (
+          <TouchableOpacity
+            style={styles.buttonContainer}
+            onPress={loginMode === "password" ? handleLogin : handleVerifyOtp}
+            disabled={loading}
           >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Ionicons
-                name="arrow-forward"
-                size={26}
-                color="#fff"
-                style={{ transform: [{ rotate: '35deg' }] }}
-              />
-            )}
-          </LinearGradient>
+            <LinearGradient
+              colors={[DARK_GLASS_THEME.electricBlue, DARK_GLASS_THEME.purple]}
+              style={styles.button}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Ionicons
+                  name="arrow-forward"
+                  size={26}
+                  color="#fff"
+                  style={{ transform: [{ rotate: '35deg' }] }}
+                />
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity
+          style={styles.registerLink}
+          onPress={() => router.replace("/register")}
+        >
+          <Text style={styles.registerText}>New user? Create account</Text>
         </TouchableOpacity>
       </View>
 
         </ScrollView>
       </KeyboardAvoidingView>
-
-      <TouchableOpacity
-        style={styles.registerLink}
-        onPress={() => router.replace("/register")}
-      >
-        <Text style={styles.registerText}>New user? Create account</Text>
-      </TouchableOpacity>
     </LinearGradient>
   );
 }
@@ -414,6 +442,38 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
 
+  sendOtpBtn: {
+    marginTop: -4,
+    marginBottom: 16,
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+
+  sendOtpGrad: {
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  sendOtpText: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 15,
+    letterSpacing: 0.3,
+  },
+
+  resendBtn: {
+    alignItems: 'center',
+    marginTop: -4,
+    marginBottom: 16,
+  },
+
+  resendText: {
+    color: DARK_GLASS_THEME.cyan,
+    fontWeight: '700',
+    fontSize: 13,
+  },
+
   optionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -429,17 +489,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: DARK_GLASS_THEME.cyan,
     fontWeight: '600',
-  },
-
-  otpButton: {
-    alignItems: "center",
-    marginTop: -4,
-    marginBottom: 16,
-  },
-
-  otpText: {
-    color: DARK_GLASS_THEME.cyan,
-    fontWeight: "700",
   },
 
   /* Bottom area */
