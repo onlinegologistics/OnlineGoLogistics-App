@@ -22,7 +22,7 @@
         "backgroundColor": "#ffffff"
       },
       "splash": {
-        "image": "./assets/images/transparent.png",
+        "image": "./assets/images/futuristic_truck.png",
         "resizeMode": "contain",
         "backgroundColor": "#0B1528",
         "dark": {
@@ -43,6 +43,7 @@
       [
         "expo-splash-screen",
         {
+          "image": "./assets/images/futuristic_truck.png",
           "backgroundColor": "#0B1528",
           "dark": {
             "backgroundColor": "#0B1528"
@@ -60,10 +61,10 @@
     "extra": {
       "APP_VARIANT": "preview",
       "router": {},
+      "API_URL": "https://app.onlinegologistics.in",
       "eas": {
-        "projectId": "228e5506-2daf-4635-850f-cd16326b6103"
-      },
-      "API_URL": "https://app.onlinegologistics.in"
+        "projectId": "f99d72a1-886b-4ecd-90a4-82823547cee2"
+      }
     }
   }
 }

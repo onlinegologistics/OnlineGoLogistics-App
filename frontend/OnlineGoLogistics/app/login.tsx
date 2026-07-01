@@ -11,6 +11,7 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
+  ImageBackground,
   Dimensions,
   Alert,
   ActivityIndicator,
@@ -112,10 +113,15 @@ export default function Login() {
   };
 
   return (
-    <LinearGradient
-      colors={[DARK_GLASS_THEME.bgNavy, DARK_GLASS_THEME.bgDarkBlue]}
+    <ImageBackground
+      source={require("../assets/images/futuristic_truck.png")}
       style={styles.container}
+      resizeMode="cover"
     >
+      <LinearGradient
+        colors={['rgba(11, 21, 40, 0.2)', 'rgba(11, 21, 40, 0.6)', 'rgba(11, 21, 40, 0.9)']}
+        style={{ flex: 1 }}
+      >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -291,7 +297,8 @@ export default function Login() {
 
         </ScrollView>
       </KeyboardAvoidingView>
-    </LinearGradient>
+      </LinearGradient>
+    </ImageBackground>
   );
 }
 

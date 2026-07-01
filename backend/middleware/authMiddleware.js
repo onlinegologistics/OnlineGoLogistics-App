@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const MobileUser = require('../models/MobileUser');
-// Trigger reload
 
 const protect = async (req, res, next) => {
     let token;
@@ -13,7 +12,13 @@ const protect = async (req, res, next) => {
         try {
             token = req.headers.authorization.split(' ')[1];
 
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            let decoded;
+            try {
+                decoded = jwt.verify(token, process.env.JWT_SECRET);
+            } catch (jwtErr) {
+                console.error('[Auth] JWT verify failed:', jwtErr.message);
+                return res.status(401).json({ message: 'Not authorized, token failed', error: jwtErr.message });
+            }
 
             // Try users collection first (admin/branch/user), then mobileusers (mobile app)
             req.user = await User.findById(decoded.id).select('-password');
@@ -22,18 +27,17 @@ const protect = async (req, res, next) => {
             }
 
             if (!req.user) {
-                res.status(401);
-                throw new Error('Not authorized, user not found');
+                console.error('[Auth] User not found for id:', decoded.id);
+                return res.status(401).json({ message: 'Not authorized, user not found' });
             }
 
             next();
         } catch (error) {
-            res.status(401).json({ message: 'Not authorized, token failed', error: error.message });
+            console.error('[Auth] Middleware error:', error.message);
+            return res.status(401).json({ message: 'Not authorized, token failed', error: error.message });
         }
-    }
-
-    if (!token) {
-        res.status(401).json({ message: 'Not authorized, no token' });
+    } else {
+        return res.status(401).json({ message: 'Not authorized, no token' });
     }
 };
 
