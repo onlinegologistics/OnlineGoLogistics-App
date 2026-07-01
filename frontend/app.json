@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "ad59a432-a4b7-410e-bccd-b201afc790de"
+      }
+    },
+    "android": {
+      "package": "com.worknailearninghub.onlinegologisticsfrontend"
+    }
+  }
+}

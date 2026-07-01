@@ -272,6 +272,8 @@ const requestRegistrationOtp = async (req, res) => {
 // @route   POST /api/auth/register/verify
 // @access  Public
 const verifyRegistrationOtp = async (req, res) => {
+    console.log(`\n[DEBUG] API HIT: ${req.method} ${req.originalUrl}`);
+    console.log(`[DEBUG] BODY:`, req.body);
     try {
         const { mobile, otp } = req.body;
 
@@ -332,6 +334,7 @@ const verifyRegistrationOtp = async (req, res) => {
         await upsertMobileUserData(user);
 
         await record.deleteOne();
+        console.log(`[DEBUG] SUCCESS: MobileUser officially created and saved to mobileusers collection. User ID: ${user._id}`);
         res.status(201).json(publicUserResponse(user));
     } catch (err) {
         if (err.code === 11000) {
@@ -484,12 +487,19 @@ const getUsers = async (req, res) => {
 // @route   DELETE /api/auth/:id
 // @access  Private/Admin
 const deleteUser = async (req, res) => {
-    const user = await User.findById(req.params.id);
-    if (user) {
-        await user.deleteOne();
-        res.json({ message: 'User removed' });
-    } else {
-        res.status(404).json({ message: 'User not found' });
+    console.log(`\n[DEBUG] API HIT: DELETE ${req.originalUrl}`);
+    console.log(`[DEBUG] USER ATTEMPTING DELETE: ${req.user?._id}`);
+    console.log(`[DEBUG] TARGET USER ID: ${req.params.id}`);
+    try {
+        const user = await User.findById(req.params.id);
+        if (user) {
+            await user.deleteOne();
+            res.json({ message: 'User removed' });
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 };
 
@@ -606,6 +616,9 @@ const getProfile = async (req, res) => {
 // @route   PUT /api/auth/profile
 // @access  Private
 const updateProfile = async (req, res) => {
+    console.log(`\n[DEBUG] API HIT: ${req.method} ${req.originalUrl}`);
+    console.log(`[DEBUG] USER ID: ${req.user._id}`);
+    console.log(`[DEBUG] BODY:`, req.body);
     try {
         let isMobileUser = false;
         let user = await User.findById(req.user._id);
@@ -614,6 +627,8 @@ const updateProfile = async (req, res) => {
             isMobileUser = true;
         }
         if (!user) return res.status(404).json({ message: 'User not found' });
+        
+        console.log(`[DEBUG] Mongo document BEFORE update:`, JSON.stringify(user, null, 2));
 
         const needsOtp = Boolean(req.body.newPassword);
 
@@ -670,6 +685,8 @@ const updateProfile = async (req, res) => {
         }
 
         const updated = await user.save();
+        console.log(`[DEBUG] Mongo document AFTER update:`, JSON.stringify(updated, null, 2));
+
         if (!isMobileUser) {
             await upsertMobileUserData(updated);
         }

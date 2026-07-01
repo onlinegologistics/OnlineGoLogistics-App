@@ -9,7 +9,8 @@ const connectDB = async () => {
             dbName, // forces DB name even if URI doesn't include it
         });
 
-        console.log(`MongoDB connected (db: ${dbName})`);
+        console.log(`[DEBUG] Mongo connected DB: ${mongoose.connection.name}`);
+        console.log(`[DEBUG] Mongo host: ${mongoose.connection.host}`);
     } catch (err) {
         console.error("MongoDB connection failed:", err.message);
         process.exit(1);

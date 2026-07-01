@@ -11,6 +11,14 @@
         "APP_VARIANT": "preview"
       }
     },
+    "shareable-apk": {
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "APP_VARIANT": "production"
+      }
+    },
     "production": {
       "android": {
         "buildType": "app-bundle"
