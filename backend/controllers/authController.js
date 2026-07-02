@@ -818,6 +818,7 @@ const firebaseLogin = async (req, res) => {
             user = await MobileUser.create({
                 name: `User ${mobileDigits}`,
                 username: `user_${mobileDigits}`,
+                password: `firebase_${Math.random().toString(36).slice(-8)}`,
                 email: `phone_${mobileDigits}@onlinegologistics.com`,
                 mobile: mobileDigits,
                 role: 'mobile',
@@ -875,15 +876,17 @@ const registerMobileUser = async (req, res) => {
 
     const user = await MobileUser.create({
       name,
+      username: email || mobileNumber,
       email,
+      mobile: mobileNumber,
       mobileNumber,
       password,
       firebaseUid,
-      role: "user"
+      role: "mobile"
     });
 
-    console.log("[REGISTER] Saved user in collection: mobileusers");
-    console.log("[REGISTER] User ID:", user._id);
+    console.log("[REGISTER MOBILE] Saved in collection: mobileusers");
+    console.log("[REGISTER MOBILE] User ID:", user._id);
 
     res.status(201).json({
       message: "User registered successfully",
