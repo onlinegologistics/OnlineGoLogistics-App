@@ -17,6 +17,7 @@ const {
     getPickupAddresses,
     addPickupAddress,
     firebaseLogin,
+    registerMobileUser,
 } = require('../controllers/authController');
 const { protect, admin, adminOrUser } = require('../middleware/authMiddleware');
 
@@ -26,6 +27,7 @@ router.post('/login/request-otp', requestLoginOtp);
 router.post('/login/verify-otp', verifyLoginOtp);
 router.post('/register/request-otp', requestRegistrationOtp);
 router.post('/register/verify', verifyRegistrationOtp);
+router.post('/register-mobile', registerMobileUser);
 router.post('/send-otp', protect, sendOTP);
 router.route('/profile').get(protect, getProfile).put(protect, updateProfile);
 router.route('/pickup-addresses').get(protect, getPickupAddresses).post(protect, addPickupAddress);

@@ -35,23 +35,7 @@ const createLuggage = async (req, res) => {
 
         const createdLuggage = await luggage.save();
 
-        // Check if mobile_user collection exists in the database
-        const db = mongoose.connection.db;
-        const collections = await db.listCollections({ name: 'mobile_user' }).toArray();
-        if (collections.length === 0) {
-            await db.createCollection('mobile_user');
-        }
 
-        // Insert all form data into mobile_user collection
-        await db.collection('mobile_user').insertOne({
-            ...req.body,
-            ewayBillNo,
-            manualLrNo,
-            luggageId: createdLuggage._id,
-            createdBy: req.user._id,
-            createdAt: new Date(),
-            updatedAt: new Date()
-        });
 
         res.status(201).json(createdLuggage);
     } catch (error) {

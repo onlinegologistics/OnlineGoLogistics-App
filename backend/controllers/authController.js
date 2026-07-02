@@ -63,9 +63,7 @@ const buildMobileUserDataDoc = (user) => ({
     updatedAt: new Date(),
 });
 
-const upsertMobileUserData = async (user) => {
-    // Deprecated: We don't maintain a separate mobile data doc anymore since mobile users are in MobileUser.
-};
+
 
 const getMobileUserData = async (userId) => {
     return await MobileUser.findById(userId);
@@ -331,7 +329,7 @@ const verifyRegistrationOtp = async (req, res) => {
             address,
             isPrimary: true,
         });
-        await upsertMobileUserData(user);
+
 
         await record.deleteOne();
         console.log(`[DEBUG] SUCCESS: MobileUser officially created and saved to mobileusers collection. User ID: ${user._id}`);
@@ -460,7 +458,7 @@ const registerUser = async (req, res) => {
         createdByUser: req.user._id,
     });
     if (user) {
-        await upsertMobileUserData(user);
+
         res.status(201).json({
             _id: user._id, name: user.name, username: user.username,
             role: user.role, email: user.email, mobile: user.mobile,
@@ -688,7 +686,7 @@ const updateProfile = async (req, res) => {
         console.log(`[DEBUG] Mongo document AFTER update:`, JSON.stringify(updated, null, 2));
 
         if (!isMobileUser) {
-            await upsertMobileUserData(updated);
+
         }
 
         // --- Sync Profile Updates to Shipments ---
@@ -756,7 +754,7 @@ const addPickupAddress = async (req, res) => {
 
         // Update the user's primary address field in the User document (acting as active location)
         const updatedUser = await User.findByIdAndUpdate(req.user._id, { address }, { new: true });
-        if (updatedUser) await upsertMobileUserData(updatedUser);
+        // Removed upsertMobileUserData
 
         // Add the new address to the PickupAddress collection as primary
         const newAddress = await PickupAddress.create({
@@ -860,6 +858,43 @@ const firebaseLogin = async (req, res) => {
     }
 };
 
+const registerMobileUser = async (req, res) => {
+  try {
+    const { name, email, mobileNumber, password, firebaseUid } = req.body;
+
+    const existingUser = await MobileUser.findOne({
+      $or: [
+        { email },
+        { mobileNumber }
+      ]
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    const user = await MobileUser.create({
+      name,
+      email,
+      mobileNumber,
+      password,
+      firebaseUid,
+      role: "user"
+    });
+
+    console.log("[REGISTER] Saved user in collection: mobileusers");
+    console.log("[REGISTER] User ID:", user._id);
+
+    res.status(201).json({
+      message: "User registered successfully",
+      user
+    });
+  } catch (error) {
+    console.error("[REGISTER ERROR]", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
     loginUser,
     requestRegistrationOtp,
@@ -877,4 +912,5 @@ module.exports = {
     getPickupAddresses,
     addPickupAddress,
     firebaseLogin,
+    registerMobileUser,
 };
