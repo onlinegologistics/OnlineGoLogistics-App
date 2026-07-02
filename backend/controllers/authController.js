@@ -333,6 +333,7 @@ const verifyRegistrationOtp = async (req, res) => {
 
         await record.deleteOne();
         console.log(`[DEBUG] SUCCESS: MobileUser officially created and saved to mobileusers collection. User ID: ${user._id}`);
+        console.log("[VERIFY OTP] Creating MobileUser in mobileusers:", user._id);
         res.status(201).json(publicUserResponse(user));
     } catch (err) {
         if (err.code === 11000) {
@@ -862,12 +863,16 @@ const firebaseLogin = async (req, res) => {
 const registerMobileUser = async (req, res) => {
   try {
     const { name, email, mobileNumber, password, firebaseUid } = req.body;
+    console.log("[REGISTER MOBILE] API body:", req.body);
+
+    const normalizedEmail = email ? email.toLowerCase().trim() : undefined;
+    const cleanMobile = mobileNumber ? mobileNumber.trim() : undefined;
 
     const existingUser = await MobileUser.findOne({
       $or: [
-        { email },
-        { mobileNumber }
-      ]
+        { email: normalizedEmail },
+        { mobileNumber: cleanMobile }
+      ].filter(cond => Object.values(cond)[0] !== undefined)
     });
 
     if (existingUser) {
@@ -876,10 +881,10 @@ const registerMobileUser = async (req, res) => {
 
     const user = await MobileUser.create({
       name,
-      username: email || mobileNumber,
-      email,
-      mobile: mobileNumber,
-      mobileNumber,
+      username: normalizedEmail || `user_${cleanMobile}`,
+      email: normalizedEmail,
+      mobile: cleanMobile,
+      mobileNumber: cleanMobile,
       password,
       firebaseUid,
       role: "mobile"
@@ -887,6 +892,7 @@ const registerMobileUser = async (req, res) => {
 
     console.log("[REGISTER MOBILE] Saved in collection: mobileusers");
     console.log("[REGISTER MOBILE] User ID:", user._id);
+    console.log("[REGISTER MOBILE] Saved in mobileusers:", user._id);
 
     res.status(201).json({
       message: "User registered successfully",

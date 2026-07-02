@@ -19,6 +19,7 @@ import { router } from "expo-router";
 import {
   requestRegistrationOtpApi,
   verifyRegistrationOtpApi,
+  registerMobileApi,
 } from "../api/auth";
 import { saveUserSession } from "../utils/session";
 import { DARK_GLASS_THEME } from "../constants/theme";
@@ -63,24 +64,30 @@ export default function Register() {
 
     try {
       setLoading(true);
-      // Calls backend registration which sends OTP to their entered Email (Gmail)
+      // Temporarily bypass OTP for direct testing
       const payload = {
         name: name.trim(),
         email: email.trim().toLowerCase(),
-        mobile: mobile.trim(),
-        alternateMobile: showAlternate && alternateMobile.trim() ? alternateMobile.trim() : undefined,
+        mobileNumber: mobile.trim(),
         password,
         address: address.trim(),
       };
-      const res = await requestRegistrationOtpApi(payload);
-      if (res && res.emailSent === false) {
-        Toast.show({ type: 'error', text1: "OTP Failed", text2: "Failed to send email. Please check server Gmail configuration." });
-      } else {
-        setOtpSent(true);
-        Toast.show({ type: 'success', text1: "OTP Sent", text2: `OTP verification code has been sent to your Gmail.` });
+      
+      const res = await registerMobileApi(payload);
+      
+      Toast.show({ type: 'success', text1: "Registered!", text2: "Account created successfully." });
+      
+      // Auto-login since OTP is bypassed
+      if (res && res.user) {
+         // Fake a token if it's not provided, but usually we should login
+         // The registerMobileUser controller does not return a token. We can just redirect to login
+         setTimeout(() => {
+           router.replace("/login");
+         }, 1500);
       }
+      
     } catch (error: any) {
-      Toast.show({ type: 'error', text1: "OTP Failed", text2: error?.response?.data?.message || "Could not send OTP" });
+      Toast.show({ type: 'error', text1: "Registration Failed", text2: error?.response?.data?.message || "Could not register" });
     } finally {
       setLoading(false);
     }

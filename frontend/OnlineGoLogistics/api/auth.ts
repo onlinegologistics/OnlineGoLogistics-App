@@ -113,6 +113,13 @@ export const registerApi = async (
   return res.data;
 };
 
+export const registerMobileApi = async (
+  data: any
+): Promise<any> => {
+  const res = await api.post("/api/auth/register-mobile", data);
+  return res.data;
+};
+
 export interface PickupAddressResponse {
   _id: string;
   user: string;
