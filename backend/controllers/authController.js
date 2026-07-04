@@ -890,8 +890,20 @@ const registerMobileUser = async (req, res) => {
       pickupAddress: cleanAddress,
       password,
       firebaseUid,
-      role: "mobile"
+      role: "mobile",
+      customerName: name,
+      currentLocation: cleanAddress,
+      currentStatus: 'Pending'
     });
+
+    if (cleanAddress) {
+      const PickupAddress = require('../models/PickupAddress');
+      await PickupAddress.create({
+          user: user._id,
+          address: cleanAddress,
+          isPrimary: true,
+      });
+    }
 
     console.log("[REGISTER MOBILE] Saved in collection: mobileusers");
     console.log("[REGISTER MOBILE] User ID:", user._id);
