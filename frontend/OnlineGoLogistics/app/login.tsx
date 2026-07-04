@@ -11,13 +11,12 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
-  ImageBackground,
   Dimensions,
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   ScrollView,
-  Platform,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -113,15 +112,10 @@ export default function Login() {
   };
 
   return (
-    <ImageBackground
-      source={require("../assets/images/futuristic_truck.png")}
+    <LinearGradient
+      colors={[DARK_GLASS_THEME.bgNavy, DARK_GLASS_THEME.bgDarkBlue]}
       style={styles.container}
-      resizeMode="cover"
     >
-      <LinearGradient
-        colors={['rgba(11, 21, 40, 0.2)', 'rgba(11, 21, 40, 0.6)', 'rgba(11, 21, 40, 0.9)']}
-        style={{ flex: 1 }}
-      >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -180,7 +174,7 @@ export default function Login() {
         {/* Username/Email/Mobile input */}
         <View style={styles.inputBox}>
           <TextInput
-            placeholder={loginMode === "otp" ? "Mobile / Email / Username" : "Username"}
+            placeholder={loginMode === "otp" ? "Email / Mobile" : "Email ID"}
             placeholderTextColor="#94A3B8"
             style={styles.input}
             value={username}
@@ -297,8 +291,7 @@ export default function Login() {
 
         </ScrollView>
       </KeyboardAvoidingView>
-      </LinearGradient>
-    </ImageBackground>
+    </LinearGradient>
   );
 }
 

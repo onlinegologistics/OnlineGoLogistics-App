@@ -287,6 +287,10 @@ export default function DrawerLayout() {
         name="branch-locator"
         options={{ drawerItemStyle: { display: "none" } }}
       />
+      <Drawer.Screen
+        name="faq"
+        options={{ drawerItemStyle: { display: "none" } }}
+      />
     </Drawer>
   );
 }

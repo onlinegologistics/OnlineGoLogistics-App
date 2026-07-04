@@ -7,6 +7,7 @@ import {
   Pressable,
   ScrollView,
   Alert,
+  Linking,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -166,22 +167,22 @@ export default function Profile() {
         <Text style={styles.sectionTitle}>Support</Text>
 
         <View style={styles.supportGrid}>
-          <Pressable style={styles.supportBtn}>
+          <Pressable style={styles.supportBtn} onPress={() => Linking.openURL("tel:9545351234")}>
             <Ionicons name="call-outline" size={24} color={COLORS.primary} />
             <Text style={styles.supportText}>Call</Text>
           </Pressable>
 
-          <Pressable style={styles.supportBtn}>
+          <Pressable style={styles.supportBtn} onPress={() => Linking.openURL("whatsapp://send?phone=+919545351234")}>
             <Ionicons name="logo-whatsapp" size={24} color={COLORS.primary} />
             <Text style={styles.supportText}>WhatsApp</Text>
           </Pressable>
 
-          <Pressable style={styles.supportBtn}>
+          <Pressable style={styles.supportBtn} onPress={() => Linking.openURL("mailto:support@onlinegologistics.in")}>
             <Ionicons name="mail-outline" size={24} color={COLORS.primary} />
             <Text style={styles.supportText}>Email</Text>
           </Pressable>
 
-          <Pressable style={styles.supportBtn}>
+          <Pressable style={styles.supportBtn} onPress={() => router.push("/drawer/faq" as any)}>
             <Ionicons name="help-circle-outline" size={24} color={COLORS.primary} />
             <Text style={styles.supportText}>FAQ</Text>
           </Pressable>

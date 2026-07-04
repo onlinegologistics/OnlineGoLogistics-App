@@ -267,10 +267,10 @@ export default function UserDashboardScreen() {
 
   const renderSupportCard = (showAll = false) => (
     <View style={styles.supportCard}>
-      <SupportButton title="Call" icon="call-outline" onPress={() => Linking.openURL("tel:+910000000000")} />
-      <SupportButton title="WhatsApp" icon="logo-whatsapp" onPress={() => Linking.openURL("https://wa.me/910000000000")} />
+      <SupportButton title="Call" icon="call-outline" onPress={() => Linking.openURL("tel:9545351234")} />
+      <SupportButton title="WhatsApp" icon="logo-whatsapp" onPress={() => Linking.openURL("whatsapp://send?phone=+919545351234")} />
       <SupportButton title="Email" icon="mail-outline" onPress={() => Linking.openURL("mailto:support@onlinegologistics.in")} />
-      <SupportButton title="FAQ" icon="help-buoy-outline" onPress={() => Toast.show({ type: 'info', text1: "FAQ", text2: "Support FAQ is ready to connect" })} />
+      <SupportButton title="FAQ" icon="help-buoy-outline" onPress={() => router.push("/drawer/faq" as any)} />
       {showAll && (
         <>
           <SupportButton title="Send Enquiry" icon="chatbubble-ellipses-outline" onPress={() => router.push("/drawer/enquiries" as any)} />
@@ -505,7 +505,7 @@ export default function UserDashboardScreen() {
           <QuickActionCard title="My Shipments" icon="cube-outline" onPress={() => setActiveTab("shipments")} />
           <QuickActionCard title="Send Enquiry" icon="help-buoy-outline" onPress={() => router.push("/drawer/enquiries" as any)} />
           <QuickActionCard title="Branch Locator" icon="map-outline" onPress={() => router.push("/drawer/branch-locator")} />
-          <QuickActionCard title="Contact Support" icon="call-outline" onPress={() => Linking.openURL("tel:+910000000000")} />
+          <QuickActionCard title="Contact Support" icon="call-outline" onPress={() => Linking.openURL("tel:9545351234")} />
         </View>
 
         <SectionTitle title="Recent Shipments" />

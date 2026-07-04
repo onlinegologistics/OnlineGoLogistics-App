@@ -255,7 +255,7 @@ export default function Register() {
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={styles.primaryText}>
-                  {otpSent ? "✓ VERIFY OTP & REGISTER" : "SEND OTP via Gmail"}
+                  {otpSent ? "✓ VERIFY OTP & REGISTER" : "CREATE ACCOUNT"}
                 </Text>
               )}
             </LinearGradient>

@@ -2,7 +2,7 @@
   "expo": {
     "name": "OnlineGoLogistics",
     "slug": "OnlineGoLogistics",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "onlinegologistics",
@@ -16,13 +16,13 @@
       "permissions": [
         "INTERNET"
       ],
-      "versionCode": 2,
+      "versionCode": 3,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "splash": {
-        "image": "./assets/images/futuristic_truck.png",
+        "image": "./assets/images/transparent.png",
         "resizeMode": "contain",
         "backgroundColor": "#0B1528",
         "dark": {
@@ -43,7 +43,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/futuristic_truck.png",
+          "image": "./assets/images/transparent.png",
           "backgroundColor": "#0B1528",
           "dark": {
             "backgroundColor": "#0B1528"

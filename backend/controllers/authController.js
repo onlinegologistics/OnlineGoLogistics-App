@@ -862,11 +862,12 @@ const firebaseLogin = async (req, res) => {
 
 const registerMobileUser = async (req, res) => {
   try {
-    const { name, email, mobileNumber, password, firebaseUid } = req.body;
+    const { name, email, mobileNumber, password, address, firebaseUid } = req.body;
     console.log("[REGISTER MOBILE] API body:", req.body);
 
     const normalizedEmail = email ? email.toLowerCase().trim() : undefined;
     const cleanMobile = mobileNumber ? mobileNumber.trim() : undefined;
+    const cleanAddress = address ? address.trim() : undefined;
 
     const existingUser = await MobileUser.findOne({
       $or: [
@@ -885,6 +886,8 @@ const registerMobileUser = async (req, res) => {
       email: normalizedEmail,
       mobile: cleanMobile,
       mobileNumber: cleanMobile,
+      address: cleanAddress,
+      pickupAddress: cleanAddress,
       password,
       firebaseUid,
       role: "mobile"

@@ -235,10 +235,13 @@ export default function AddRecordForm({
         <ActivityIndicator size="small" color={DARK_GLASS_THEME.electricBlue} style={{ marginVertical: 8 }} />
       ) : (
         <View style={styles.addressList}>
-          {addresses.length === 0 && shared.pickupAddress ? (
-            <Pressable style={[styles.addressItem, styles.addressItemActive]}>
+          {shared.pickupAddress && !addresses.some((a) => a.address === shared.pickupAddress) ? (
+            <Pressable 
+              style={[styles.addressItem, styles.addressItemActive]}
+              onPress={() => setSharedValue("pickupAddress", shared.pickupAddress)}
+            >
               <Text style={[styles.addressText, styles.addressTextActive]}>
-                {shared.pickupAddress}
+                {shared.pickupAddress} (Profile Default)
               </Text>
             </Pressable>
           ) : null}
