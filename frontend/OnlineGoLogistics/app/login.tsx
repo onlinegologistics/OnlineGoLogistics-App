@@ -76,11 +76,11 @@ export default function Login() {
       setLoading(true);
       // Calls backend which finds the user and sends OTP to their registered Gmail (email)
       const res = await requestLoginOtpApi({ identifier: trimmed.toLowerCase() });
-      if (res && res.emailSent === false) {
-        Toast.show({ type: 'error', text1: "OTP Failed", text2: "Failed to send email. Please check server Gmail configuration." });
+      if (res && res.emailSent === false && !res.smsSent) {
+        Toast.show({ type: 'error', text1: "OTP Failed", text2: "Failed to send OTP. Please check server configuration." });
       } else {
         setOtpSent(true);
-        Toast.show({ type: 'success', text1: "OTP Sent", text2: `OTP verification code has been sent to your registered Gmail address.` });
+        Toast.show({ type: 'success', text1: "OTP Sent", text2: `OTP verification code has been sent to your registered Email/Mobile.` });
       }
     } catch (error: any) {
       Toast.show({ type: 'error', text1: "OTP Failed", text2: error?.response?.data?.message || "Could not send OTP" });
@@ -166,7 +166,7 @@ export default function Login() {
             onPress={() => { setLoginMode("otp"); setOtpSent(false); }}
           >
             <Text style={[styles.modeText, loginMode === "otp" && styles.activeModeText]}>
-              Gmail OTP
+              OTP
             </Text>
           </TouchableOpacity>
         </View>
@@ -222,7 +222,7 @@ export default function Login() {
                   {loading ? (
                     <ActivityIndicator color="#fff" size="small" />
                   ) : (
-                    <Text style={styles.sendOtpText}>Send OTP to registered Gmail</Text>
+                    <Text style={styles.sendOtpText}>Send OTP to registered Email/Mobile</Text>
                   )}
                 </LinearGradient>
               </TouchableOpacity>
@@ -233,7 +233,7 @@ export default function Login() {
               <>
                 <View style={[styles.inputBox, { borderColor: DARK_GLASS_THEME.electricBlue }]}>
                   <TextInput
-                    placeholder="Enter OTP from Gmail"
+                    placeholder="Enter OTP"
                     placeholderTextColor="#94A3B8"
                     style={styles.input}
                     value={otp}

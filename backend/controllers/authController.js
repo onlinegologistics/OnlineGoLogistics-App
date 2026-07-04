@@ -87,16 +87,21 @@ const mergedProfileResponse = async (user) => {
 
 const https = require('https');
 
-const sendOtpFast2SMS = async ({ mobile, otp }) => {
-    console.log(`[Fast2SMS] Attempting to send OTP to ${mobile}: ${otp}`);
+const sendOtpDreamzTechnology = async ({ mobile, otp }) => {
+    console.log(`[DreamzSMS] Attempting to send OTP to ${mobile}: ${otp}`);
     
-    const apiKey = process.env.FAST2SMS_API_KEY;
-    if (!apiKey) {
-        console.log(`[Fast2SMS] API key missing in .env. Skipping real SMS transmission.`);
+    const apiUrl = process.env.SMS_API_URL;
+    const apiKey = process.env.SMS_API_KEY;
+    const username = process.env.SMS_USERNAME;
+    const password = process.env.SMS_PASSWORD;
+    const senderId = process.env.SMS_SENDER_ID;
+    const templateId = process.env.SMS_TEMPLATE_ID;
+
+    if (!apiUrl || !username || !password) {
+        console.log(`[DreamzSMS] SMS credentials missing in .env. Skipping real SMS transmission.`);
         return false;
     }
 
-    // Format phone number (remove +91 if present for Fast2SMS as it expects 10 digits)
     let formattedMobile = mobile.trim();
     if (formattedMobile.startsWith('+91')) {
         formattedMobile = formattedMobile.substring(3);
@@ -105,30 +110,28 @@ const sendOtpFast2SMS = async ({ mobile, otp }) => {
     }
 
     return new Promise((resolve) => {
-        const url = `https://www.fast2sms.com/dev/bulkV2?authorization=${encodeURIComponent(apiKey)}&route=otp&variables_values=${encodeURIComponent(otp)}&numbers=${encodeURIComponent(formattedMobile)}`;
+        // As per the provided template, the message will be "Your OTP is <otp>". Adjust if the actual template requires a different format.
+        const msg = `Your OTP is ${otp}`;
+        // Usually, DreamzTechnology accepts parameters like user/pass or username/password.
+        // Assuming: mobile, pass, senderid, to, msg based on the test
+        const url = `${apiUrl}?mobile=${encodeURIComponent(username)}&pass=${encodeURIComponent(password)}&senderid=${encodeURIComponent(senderId)}&to=${encodeURIComponent(formattedMobile)}&msg=${encodeURIComponent(msg)}&templateid=${encodeURIComponent(templateId)}`;
         
-        https.get(url, (res) => {
+        const http = require('http');
+        http.get(url, (res) => {
             let data = '';
             res.on('data', (chunk) => {
                 data += chunk;
             });
             res.on('end', () => {
-                try {
-                    const response = JSON.parse(data);
-                    if (response.return === true) {
-                        console.log(`[Fast2SMS] SMS sent successfully:`, response.message);
-                        resolve(true);
-                    } else {
-                        console.error(`[Fast2SMS] API failed to send SMS:`, response.message);
-                        resolve(false);
-                    }
-                } catch (err) {
-                    console.error(`[Fast2SMS] Failed to parse API response:`, data);
+                console.log(`[DreamzSMS] API Response:`, data);
+                if (data && data.toLowerCase().includes('sent')) {
+                    resolve(true);
+                } else {
                     resolve(false);
                 }
             });
         }).on('error', (err) => {
-            console.error(`[Fast2SMS] Connection error:`, err.message);
+            console.error(`[DreamzSMS] Connection error:`, err.message);
             resolve(false);
         });
     });
@@ -260,9 +263,11 @@ const requestRegistrationOtp = async (req, res) => {
             otp,
             subject: 'OTP for Online Go Logistics Registration',
         });
+        
+        const smsSent = mobile ? await sendOtpDreamzTechnology({ mobile, otp }) : false;
 
         console.log(`Registration OTP for ${mobile}: ${otp}`);
-        res.json(buildOtpResponse('OTP sent for registration', otp, { emailSent }));
+        res.json(buildOtpResponse('OTP sent for registration', otp, { emailSent, smsSent }));
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -394,8 +399,10 @@ const requestLoginOtp = async (req, res) => {
             subject: 'OTP for Online Go Logistics Login',
         });
 
+        const smsSent = user.mobile ? await sendOtpDreamzTechnology({ mobile: user.mobile, otp }) : false;
+
         console.log(`Login OTP for ${user.mobile || user.email || user.username}: ${otp}`);
-        res.json(buildOtpResponse('OTP sent for login', otp, { emailSent }));
+        res.json(buildOtpResponse('OTP sent for login', otp, { emailSent, smsSent }));
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -586,11 +593,14 @@ const sendOTP = async (req, res) => {
             console.error('Nodemailer failed to send profile OTP:', error.message);
         }
 
+        const smsSent = user.mobile ? await sendOtpDreamzTechnology({ mobile: user.mobile, otp }) : false;
+
         console.log(`Profile Update OTP for ${user.email}: ${otp}`);
         res.json({ 
-            message: emailSent ? `OTP sent to ${user.email}` : 'Failed to send OTP email, but OTP is generated', 
+            message: emailSent || smsSent ? `OTP sent to ${user.email || user.mobile}` : 'Failed to send OTP email or SMS, but OTP is generated', 
             emailSent,
-            devOtp: emailSent ? undefined : otp 
+            smsSent,
+            devOtp: (emailSent || smsSent) ? undefined : otp 
         });
     } catch (err) {
         res.status(500).json({ message: err.message });
