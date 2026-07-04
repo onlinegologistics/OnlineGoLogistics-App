@@ -41,6 +41,7 @@ const profileResponse = (user) => ({
     role: user.role,
     isActive: user.isActive,
     profilePhoto: user.profilePhoto,
+    pickupAddress: user.pickupAddress,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
 });
@@ -55,10 +56,10 @@ const buildMobileUserDataDoc = (user) => ({
     company: user.company,
     role: user.role,
     isActive: user.isActive,
-    pickupAddress: user.address,
+    pickupAddress: user.pickupAddress || user.address,
     customerName: user.name,
     mobileNumber: user.mobile,
-    currentLocation: user.address,
+    currentLocation: user.pickupAddress || user.address,
     currentStatus: 'Pending',
     updatedAt: new Date(),
 });
@@ -78,6 +79,7 @@ const mergedProfileResponse = async (user) => {
         email: mobileData?.email || user.email,
         mobile: mobileData?.mobile || user.mobile,
         address: mobileData?.address || user.address,
+        pickupAddress: mobileData?.pickupAddress || user.pickupAddress || mobileData?.address || user.address,
         company: mobileData?.company || user.company,
         profilePhoto: mobileData?.profilePhoto || user.profilePhoto,
     };
