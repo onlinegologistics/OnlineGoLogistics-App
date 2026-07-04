@@ -40,4 +40,4 @@ jobs:
             cd ${{ secrets.VPS_TARGET_DIR }}/backend
             npm install --production
             # Restart the app using pm2 (assuming pm2 is installed on the VPS)
-            pm2 restart server.js --name "onlinego-backend" || pm2 start server.js --name "onlinego-backend"
+            pm2 restart "onlinego-backend" || pm2 start server.js --name "onlinego-backend"
