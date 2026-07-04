@@ -20,14 +20,14 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 const COLORS = {
-  primary: "#7C3AED",
-  secondary: "#EC9BCB",
-  bgTop: "#F3F4F6",
-  bgBottom: "#DCCBFF",
-  card: "rgba(255,255,255,0.78)",
-  textPrimary: "#171424",
-  textSecondary: "#7A7485",
-  border: "rgba(255,255,255,0.7)",
+  bgTop: "#0B0F19",
+  bgBottom: "#111827",
+  primary: "#3B82F6", // electricBlue
+  secondary: "#8B5CF6", // purple
+  card: "rgba(17, 24, 39, 0.7)",
+  textPrimary: "#F8FAFC",
+  textSecondary: "#94A3B8",
+  border: "rgba(59, 130, 246, 0.3)",
   white: "#FFFFFF",
 };
 
@@ -79,7 +79,7 @@ function AccordionItem({ question, answer, isExpanded, onPress }: any) {
         <Text style={[styles.questionText, isExpanded && { color: COLORS.primary }]}>
           {question}
         </Text>
-        <View style={[styles.iconWrap, isExpanded && { backgroundColor: "rgba(124, 58, 237, 0.12)" }]}>
+        <View style={[styles.iconWrap, isExpanded && { backgroundColor: "rgba(59, 130, 246, 0.15)" }]}>
           <Ionicons
             name={isExpanded ? "chevron-up" : "chevron-down"}
             size={20}
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 20,
-    backgroundColor: COLORS.white,
+    backgroundColor: "rgba(255,255,255,0.15)",
     justifyContent: "center",
     alignItems: "center",
   },
