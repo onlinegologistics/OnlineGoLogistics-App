@@ -393,15 +393,23 @@ const requestLoginOtp = async (req, res) => {
         user.otpExpiry = otpExpiry;
         await user.save();
 
-        const emailSent = await sendOtpEmail({
-            email: user.email,
-            otp,
-            subject: 'OTP for Online Go Logistics Login',
-        });
+        let emailSent = false;
+        let smsSent = false;
 
-        const smsSent = user.mobile ? await sendOtpDreamzTechnology({ mobile: user.mobile, otp }) : false;
+        // Check if the identifier looks like a mobile number (contains mostly digits, optional '+')
+        const isMobile = /^[\+0-9]+$/.test(loginIdentifier);
 
-        console.log(`Login OTP for ${user.mobile || user.email || user.username}: ${otp}`);
+        if (isMobile && user.mobile) {
+            smsSent = await sendOtpDreamzTechnology({ mobile: user.mobile, otp });
+        } else if (user.email) {
+            emailSent = await sendOtpEmail({
+                email: user.email,
+                otp,
+                subject: 'OTP for Online Go Logistics Login',
+            });
+        }
+
+        console.log(`Login OTP for ${loginIdentifier}: ${otp}`);
         res.json(buildOtpResponse('OTP sent for login', otp, { emailSent, smsSent }));
     } catch (err) {
         res.status(500).json({ message: err.message });
