@@ -396,17 +396,33 @@ const requestLoginOtp = async (req, res) => {
         let emailSent = false;
         let smsSent = false;
 
-        // Check if the identifier looks like a mobile number (contains mostly digits, optional '+')
-        const isMobile = /^[\+0-9]+$/.test(loginIdentifier);
+        // Clean identifier to check if it's a mobile number
+        const cleanedIdentifier = String(loginIdentifier).replace(/[\s\-]/g, '');
+        const isMobile = /^\+?\d{7,15}$/.test(cleanedIdentifier);
+        const targetMobile = user.mobile || (isMobile ? cleanedIdentifier : null);
 
-        if (isMobile && user.mobile) {
-            smsSent = await sendOtpDreamzTechnology({ mobile: user.mobile, otp });
+        console.log(`[OTP Request] identifier: ${loginIdentifier}, isMobile: ${isMobile}, targetMobile: ${targetMobile}`);
+
+        if (isMobile && targetMobile) {
+            smsSent = await sendOtpDreamzTechnology({ mobile: targetMobile, otp });
+            console.log(`[OTP Request] Sent SMS to ${targetMobile}. Result: ${smsSent}`);
+            
+            // Optional: fallback to email ONLY if SMS failed and user has email
+            if (!smsSent && user.email) {
+                console.log(`[OTP Request] SMS failed, falling back to email ${user.email}`);
+                emailSent = await sendOtpEmail({
+                    email: user.email,
+                    otp,
+                    subject: 'OTP for Online Go Logistics Login',
+                });
+            }
         } else if (user.email) {
             emailSent = await sendOtpEmail({
                 email: user.email,
                 otp,
                 subject: 'OTP for Online Go Logistics Login',
             });
+            console.log(`[OTP Request] Sent Email to ${user.email}. Result: ${emailSent}`);
         }
 
         console.log(`Login OTP for ${loginIdentifier}: ${otp}`);
