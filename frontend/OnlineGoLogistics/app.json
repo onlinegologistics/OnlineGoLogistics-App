@@ -2,7 +2,7 @@
   "expo": {
     "name": "OnlineGoLogistics",
     "slug": "OnlineGoLogistics",
-    "version": "1.0.2",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "onlinegologistics",
@@ -16,7 +16,7 @@
       "permissions": [
         "INTERNET"
       ],
-      "versionCode": 3,
+      "versionCode": 5,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -63,8 +63,9 @@
       "router": {},
       "API_URL": "https://app.onlinegologistics.in",
       "eas": {
-        "projectId": "f99d72a1-886b-4ecd-90a4-82823547cee2"
+        "projectId": "820643c5-1927-4235-9f9e-846974801397"
       }
-    }
+    },
+    "owner": "worknai-onlinegologistics"
   }
 }

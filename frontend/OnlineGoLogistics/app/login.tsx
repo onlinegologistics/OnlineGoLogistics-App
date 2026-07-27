@@ -1,9 +1,10 @@
 import React from 'react';
 import { router } from 'expo-router';
-import { useState } from "react";
-import { loginApi, requestLoginOtpApi, verifyLoginOtpApi } from "../api/auth";
+import { useState, useEffect } from "react";
+import { loginApi, requestLoginOtpApi, verifyLoginOtpApi, forgotPasswordApi } from "../api/auth";
 import { getHomeRouteForRole } from "../utils/roleRoutes";
 import { saveUserSession } from "../utils/session";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -30,6 +31,24 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  useEffect(() => {
+    const loadSavedCredentials = async () => {
+      try {
+        const savedUsername = await AsyncStorage.getItem('saved_username');
+        const savedPassword = await AsyncStorage.getItem('saved_password');
+        if (savedUsername && savedPassword) {
+          setUsername(savedUsername);
+          setPassword(savedPassword);
+          setRememberMe(true);
+        }
+      } catch (error) {
+        console.log("Error loading credentials", error);
+      }
+    };
+    loadSavedCredentials();
+  }, []);
 
   // Email OTP state
   const [otp, setOtp] = useState("");
@@ -50,6 +69,13 @@ export default function Login() {
 
       if (res && res.token) {
         await saveUserSession(res);
+        if (rememberMe) {
+          await AsyncStorage.setItem('saved_username', username.trim().toLowerCase());
+          await AsyncStorage.setItem('saved_password', password);
+        } else {
+          await AsyncStorage.removeItem('saved_username');
+          await AsyncStorage.removeItem('saved_password');
+        }
         router.replace(getHomeRouteForRole(res.role) as any);
       } else {
         Toast.show({ type: 'error', text1: "Error", text2: "Login succeeded but token is missing" });
@@ -74,13 +100,14 @@ export default function Login() {
 
     try {
       setLoading(true);
-      // Calls backend which finds the user and sends OTP to their registered Gmail (email)
       const res = await requestLoginOtpApi({ identifier: trimmed.toLowerCase() });
       if (res && res.emailSent === false && !res.smsSent) {
         Toast.show({ type: 'error', text1: "OTP Failed", text2: "Failed to send OTP. Please check server configuration." });
       } else {
         setOtpSent(true);
-        Toast.show({ type: 'success', text1: "OTP Sent", text2: `OTP verification code has been sent to your registered Email/Mobile.` });
+        const isMobile = /^\d+$/.test(trimmed);
+        const method = (res.smsSent || isMobile) ? "Mobile Number via SMS" : "Email";
+        Toast.show({ type: 'success', text1: "OTP Sent", text2: `OTP verification code has been sent to your ${method}.` });
       }
     } catch (error: any) {
       Toast.show({ type: 'error', text1: "OTP Failed", text2: error?.response?.data?.message || "Could not send OTP" });
@@ -106,6 +133,33 @@ export default function Login() {
       router.replace(getHomeRouteForRole(res.role) as any);
     } catch (error: any) {
       Toast.show({ type: 'error', text1: "Verification Failed", text2: error?.response?.data?.message || "Invalid OTP" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    const emailInput = username.trim();
+    if (!emailInput) {
+      Alert.alert(
+        "Forgot Password?",
+        "Please enter your Email ID in the input box above first, then click Forgot Password to receive a reset link."
+      );
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await forgotPasswordApi(emailInput);
+      Alert.alert(
+        "Reset Link Sent",
+        "A password reset link has been sent to your registered email address. Please check your inbox (and spam folder) to reset your password."
+      );
+    } catch (error: any) {
+      Alert.alert(
+        "Reset Failed",
+        error?.response?.data?.message || "Could not send password reset link. Please check the email address."
+      );
     } finally {
       setLoading(false);
     }
@@ -174,7 +228,7 @@ export default function Login() {
         {/* Username/Email/Mobile input */}
         <View style={styles.inputBox}>
           <TextInput
-            placeholder={loginMode === "otp" ? "Email / Mobile" : "Email ID"}
+            placeholder={loginMode === "otp" ? "Mail OTP" : "Email ID"}
             placeholderTextColor="#94A3B8"
             style={styles.input}
             value={username}
@@ -202,8 +256,24 @@ export default function Login() {
 
             {/* Options */}
             <View style={styles.optionsRow}>
-              <Text style={styles.remember}>☑ Remember Me</Text>
-              <Text style={styles.forgot}>Forgot Password?</Text>
+              <TouchableOpacity 
+                style={styles.checkboxContainer} 
+                onPress={() => setRememberMe(!rememberMe)}
+                activeOpacity={0.7}
+              >
+                <Ionicons 
+                  name={rememberMe ? "checkbox" : "square-outline"} 
+                  size={22} 
+                  color={rememberMe ? DARK_GLASS_THEME.cyan : DARK_GLASS_THEME.textSecondary} 
+                />
+                <Text style={[styles.remember, rememberMe && { color: DARK_GLASS_THEME.textPrimary }]}>
+                  Remember Me
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={handleForgotPassword}>
+                <Text style={styles.forgot}>Forgot Password?</Text>
+              </TouchableOpacity>
             </View>
           </>
         ) : (
@@ -222,7 +292,7 @@ export default function Login() {
                   {loading ? (
                     <ActivityIndicator color="#fff" size="small" />
                   ) : (
-                    <Text style={styles.sendOtpText}>Send OTP to registered Email/Mobile</Text>
+                    <Text style={styles.sendOtpText}>Send OTP via Mail</Text>
                   )}
                 </LinearGradient>
               </TouchableOpacity>
@@ -477,12 +547,20 @@ const styles = StyleSheet.create({
   optionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: 5,
   },
 
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+
   remember: {
-    fontSize: 13,
+    fontSize: 14,
     color: DARK_GLASS_THEME.textSecondary,
+    fontWeight: '500',
   },
 
   forgot: {

@@ -54,6 +54,7 @@ export const loginApi = async (
 export interface OtpRequestResponse {
   message: string;
   emailSent?: boolean;
+  smsSent?: boolean;
   devOtp?: string;
 }
 
@@ -138,5 +139,12 @@ export const addPickupAddressApi = async (
   address: string
 ): Promise<PickupAddressResponse> => {
   const res = await api.post<PickupAddressResponse>("/api/auth/pickup-addresses", { address });
+  return res.data;
+};
+
+export const forgotPasswordApi = async (
+  email: string
+): Promise<{ message: string }> => {
+  const res = await api.post<{ message: string }>("/api/auth/forgot-password", { email });
   return res.data;
 };
