@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 
 import { removeToken } from "../../utils/token";
+import { clearUserSession } from "../../utils/session";
 
 const COLORS = {
   primary: "#7C3AED",
@@ -65,7 +66,7 @@ export default function Profile() {
         style: "destructive",
         onPress: async () => {
           await removeToken();
-          await AsyncStorage.clear();
+          await clearUserSession();
           router.replace("/login");
         },
       },

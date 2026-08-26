@@ -34,6 +34,7 @@ import {
   getRecentShipments,
   trackShipment,
 } from "../services/logisticsApi";
+import { clearUserSession } from "../../utils/session";
 import { DARK_GLASS_THEME } from "../../constants/theme";
 import { removeToken } from "../../utils/token";
 import { getProfileApi } from "../../api/auth";
@@ -69,7 +70,7 @@ export default function UserDashboardScreen() {
 
   const handleLogout = async () => {
     await removeToken();
-    await AsyncStorage.clear();
+    await clearUserSession();
     router.replace("/login");
   };
 
@@ -689,13 +690,14 @@ function BottomNav({
   activeTab: DashboardTab;
   onChange: (tab: DashboardTab) => void;
 }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const items: { key: DashboardTab; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-    { key: "home", label: "Home", icon: "home-outline" },
-    { key: "shipments", label: "Shipments", icon: "cube-outline" },
-    { key: "add", label: "Add Shipment", icon: "add-circle-outline" },
-    { key: "track", label: "Track", icon: "locate-outline" },
-    { key: "profile", label: "Profile", icon: "person-outline" },
+    { key: "home", label: t("home"), icon: "home-outline" },
+    { key: "shipments", label: t("shipments"), icon: "cube-outline" },
+    { key: "add", label: t("new_shipment"), icon: "add-circle-outline" },
+    { key: "track", label: t("track"), icon: "locate-outline" },
+    { key: "profile", label: t("profile"), icon: "person-outline" },
   ];
 
   return (
@@ -719,7 +721,7 @@ function BottomNav({
                   <Ionicons name="add" size={28} color="#FFFFFF" />
                 </LinearGradient>
                 <Text style={[styles.navLabel, active && styles.activeNavLabel, { marginTop: 4 }]}>
-                  Add Shipment
+                  {t("new_shipment")}
                 </Text>
               </Pressable>
             );

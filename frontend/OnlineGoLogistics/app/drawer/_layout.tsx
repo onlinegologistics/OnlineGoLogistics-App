@@ -2,6 +2,7 @@ import "react-native-reanimated";
 import { Drawer } from "expo-router/drawer";
 import { router, usePathname } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { clearUserSession } from "../../utils/session";
 import { removeToken } from "../../utils/token";
 import { getHomeRouteForRole, normalizeRole } from "../../utils/roleRoutes";
 import {
@@ -22,6 +23,7 @@ import { useCallback, useEffect, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import { DARK_GLASS_THEME } from "../../constants/theme";
 import { getProfileApi, UserProfile } from "../../api/auth";
+import { useTranslation } from "react-i18next";
 
 const COLORS = {
   textPrimary: DARK_GLASS_THEME.textPrimary,
@@ -54,6 +56,7 @@ function DrawerItemRow({ icon, label, onPress, danger = false }: any) {
 }
 
 function CustomDrawerContent(props: any) {
+  const { t } = useTranslation();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [name, setName] = useState("Customer");
   const [role, setRole] = useState("customer");
@@ -91,7 +94,7 @@ function CustomDrawerContent(props: any) {
 
   const logout = async () => {
     await removeToken();
-    await AsyncStorage.clear();
+    await clearUserSession();
     router.replace("/login");
   };
 
@@ -161,14 +164,14 @@ function CustomDrawerContent(props: any) {
         <View style={styles.menu}>
           <DrawerItemRow
             icon="home-outline"
-            label="Dashboard"
+            label={t("home")}
             onPress={() => router.push(getHomeRouteForRole(roleValue) as any)}
           />
 
           {/* Add Shipment instead of Track/Requests */}
           <DrawerItemRow
             icon="add-circle-outline"
-            label="Add Shipment"
+            label={t("new_shipment")}
             onPress={() => router.push({ pathname: "/drawer/user-dashboard", params: { tab: "add" } } as any)}
           />
 
@@ -176,12 +179,12 @@ function CustomDrawerContent(props: any) {
             <>
               <DrawerItemRow
                 icon="chatbubble-ellipses-outline"
-                label="Send Enquiry"
+                label={t("send_enquiry")}
                 onPress={() => router.push("/drawer/enquiries")}
               />
               <DrawerItemRow
                 icon="alert-circle-outline"
-                label="Raise Complaint"
+                label={t("send_complaint")}
                 onPress={() => router.push("/drawer/complaints")}
               />
             </>
@@ -189,12 +192,12 @@ function CustomDrawerContent(props: any) {
 
           <DrawerItemRow
             icon="map-outline"
-            label="Branch Locator"
+            label={t("branch_locator")}
             onPress={() => router.push("/drawer/branch-locator")}
           />
           <DrawerItemRow
             icon="call-outline"
-            label="Contact Us"
+            label={t("support")}
             onPress={() => router.push("/drawer/contact")}
           />
 
@@ -202,7 +205,7 @@ function CustomDrawerContent(props: any) {
 
           <DrawerItemRow
             icon="log-out-outline"
-            label="Logout"
+            label={t("logout")}
             danger
             onPress={logout}
           />

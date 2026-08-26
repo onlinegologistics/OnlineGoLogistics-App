@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { saveToken } from "./token";
+import { saveToken, removeToken } from "./token";
 
 export interface SessionUser {
   _id: string;
@@ -13,4 +13,9 @@ export const saveUserSession = async (user: SessionUser) => {
   await AsyncStorage.setItem("userName", user.name || "");
   await AsyncStorage.setItem("userRole", user.role || "");
   await AsyncStorage.setItem("userId", user._id || "");
+};
+
+export const clearUserSession = async () => {
+  await removeToken();
+  await AsyncStorage.multiRemove(["userName", "userRole", "userId"]);
 };
