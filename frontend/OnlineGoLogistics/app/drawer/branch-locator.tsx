@@ -28,29 +28,39 @@ interface Branch {
 const mockBranches: Branch[] = [
   {
     id: "1",
-    name: "Central Hub",
-    address: "Pune, Maharashtra, India",
-    distance: "2.5 km away",
+    name: "Sangamwadi Branch",
+    address: "Online Go Parking 3, Sangamwadi Rd, Sangamvadi, Pune, Maharashtra 411003",
+    distance: "1.2 km away",
     status: "Open",
     hours: "Closes 8:00 PM",
-    lat: 18.5204,
-    lng: 73.8567,
+    lat: 18.5362,
+    lng: 73.8739,
   },
   {
     id: "2",
+    name: "Talawade Branch",
+    address: "Business Park Jyotiba Nagar, Talwade, Pune, Pimpri-Chinchwad, Maharashtra 411062",
+    distance: "18.5 km away",
+    status: "Open",
+    hours: "Closes 7:30 PM",
+    lat: 18.6792,
+    lng: 73.7915,
+  },
+  {
+    id: "3",
     name: "Mumbai sorting office",
     address: "Andheri East, Mumbai, India",
-    distance: "12.4 km away",
+    distance: "120 km away",
     status: "Open",
     hours: "Closes 9:00 PM",
     lat: 19.1136,
     lng: 72.8697,
   },
   {
-    id: "3",
+    id: "4",
     name: "Latur Distribution Branch",
     address: "MIDC Area, Latur, India",
-    distance: "245 km away",
+    distance: "340 km away",
     status: "Closed",
     hours: "Opens 9:00 AM",
     lat: 18.4088,
@@ -99,14 +109,22 @@ export default function BranchLocatorScreen() {
           {/* Map Pins */}
           {filtered.map((b) => {
             const isSelected = selectedBranch.id === b.id;
+            let pinTop = "50%";
+            let pinLeft = "50%";
+            
+            if (b.id === "1") { pinTop = "42%"; pinLeft = "48%"; }
+            else if (b.id === "2") { pinTop = "32%"; pinLeft = "38%"; }
+            else if (b.id === "3") { pinTop = "25%"; pinLeft = "28%"; }
+            else if (b.id === "4") { pinTop = "65%"; pinLeft = "68%"; }
+
             return (
               <Pressable
                 key={b.id}
                 style={[
                   styles.mapPinContainer,
                   {
-                    top: b.id === "1" ? "40%" : b.id === "2" ? "25%" : "60%",
-                    left: b.id === "1" ? "50%" : b.id === "2" ? "30%" : "70%",
+                    top: pinTop as any,
+                    left: pinLeft as any,
                   },
                 ]}
                 onPress={() => setSelectedBranch(b)}

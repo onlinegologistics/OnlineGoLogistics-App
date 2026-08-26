@@ -19,6 +19,7 @@ export interface AddShipmentPayload {
   deliveryAddress: string;
   pickupCity: string;
   deliveryCity: string;
+  deliveryLocation?: string;
   parcelType: string;
   parcelWeight: number;
   quantity: number;
@@ -43,6 +44,7 @@ export interface ShipmentDetails extends ShipmentRecord {
   mobileNumber?: string;
   pickupAddress: string;
   deliveryAddress: string;
+  deliveryLocation?: string;
   parcelWeight?: number;
   quantity?: number;
   transportType?: string;
@@ -130,6 +132,7 @@ const toShipmentDetails = (item: any): ShipmentDetails => ({
   mobileNumber: item.mobileNumber || item.customer?.mobile,
   pickupAddress: item.pickupAddress || "",
   deliveryAddress: item.deliveryAddress || "",
+  deliveryLocation: item.deliveryLocation || "",
   parcelWeight: item.weight,
   quantity: item.quantity,
   transportType: item.transportType,
@@ -183,6 +186,7 @@ export const addShipmentRecord = async (payload: AddShipmentPayload): Promise<Sh
     remarks: payload.notes,
     pickupCity: payload.pickupCity,
     deliveryCity: payload.deliveryCity,
+    deliveryLocation: payload.deliveryLocation || undefined,
     customerName: payload.customerName,
     mobileNumber: payload.mobileNumber,
   };
@@ -320,6 +324,7 @@ export const updateShipmentDetails = async (
     deliveryAddress: payload.deliveryAddress,
     pickupCity: payload.pickupCity,
     deliveryCity: payload.deliveryCity,
+    deliveryLocation: payload.deliveryLocation || undefined,
     packageDescription: payload.parcelType,
     parcelType: payload.parcelType,
     weight: payload.parcelWeight,
@@ -466,4 +471,33 @@ export const searchAddressSuggestions = async (query: string): Promise<AddressSu
     seen.add(key);
     return true;
   }).slice(0, 10);
+};
+
+export interface Branch {
+  _id: string;
+  name: string;
+  city: string;
+  address: string;
+}
+
+export const getBranches = async (city?: string): Promise<Branch[]> => {
+  const url = city ? `/api/branches?city=${encodeURIComponent(city)}` : "/api/branches";
+  const res = await api.get<Branch[]>(url);
+  return res.data;
+};
+
+export const getCities = async (): Promise<string[]> => {
+  const res = await api.get<string[]>("/api/branches/cities");
+  return res.data;
+};
+
+export interface DeliveryLocation {
+  _id: string;
+  city: string;
+  address: string;
+}
+
+export const getDeliveryLocations = async (): Promise<DeliveryLocation[]> => {
+  const res = await api.get<DeliveryLocation[]>("/api/delivery-locations");
+  return res.data;
 };

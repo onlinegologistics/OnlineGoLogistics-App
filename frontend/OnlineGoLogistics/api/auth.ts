@@ -24,6 +24,8 @@ export interface UserProfile {
   username: string;
   email?: string;
   mobile?: string;
+  alternateMobile?: string;
+  whatsappMobile?: string;
   address?: string;
   company?: string;
   role: string;
@@ -101,7 +103,7 @@ export const getProfileApi = async (): Promise<UserProfile> => {
 };
 
 export const updateProfileApi = async (
-  data: Partial<Pick<UserProfile, "name" | "username" | "email" | "mobile" | "address" | "company" | "profilePhoto">>
+  data: Partial<Pick<UserProfile, "name" | "username" | "email" | "mobile" | "alternateMobile" | "whatsappMobile" | "address" | "company" | "profilePhoto">>
 ): Promise<{ message: string; user: UserProfile }> => {
   const res = await api.put<{ message: string; user: UserProfile }>("/api/auth/profile", data);
   return res.data;

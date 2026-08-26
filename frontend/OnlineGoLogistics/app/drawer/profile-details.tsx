@@ -18,6 +18,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -31,12 +32,15 @@ const emptyProfile: UserProfile = {
   username: "",
   email: "",
   mobile: "",
+  alternateMobile: "",
+  whatsappMobile: "",
   address: "",
   company: "",
   role: "",
 };
 
 export default function ProfileDetails() {
+  const { t } = useTranslation();
   const [profile, setProfile] = useState<UserProfile>(emptyProfile);
   const [draft, setDraft] = useState<UserProfile>(emptyProfile);
   const [loading, setLoading] = useState(true);
@@ -157,6 +161,16 @@ export default function ProfileDetails() {
       return;
     }
 
+    if (draft.alternateMobile && !/^[0-9]{10}$/.test(draft.alternateMobile.trim())) {
+      Toast.show({ type: 'error', text1: "Validation", text2: "Enter a valid 10 digit alternate mobile number" });
+      return;
+    }
+
+    if (draft.whatsappMobile && !/^[0-9]{10}$/.test(draft.whatsappMobile.trim())) {
+      Toast.show({ type: 'error', text1: "Validation", text2: "Enter a valid 10 digit WhatsApp number" });
+      return;
+    }
+
     try {
       setSaving(true);
       const res = await updateProfileApi({
@@ -164,6 +178,8 @@ export default function ProfileDetails() {
         username: draft.username.trim(),
         email: draft.email?.trim(),
         mobile: draft.mobile?.trim(),
+        alternateMobile: draft.alternateMobile?.trim(),
+        whatsappMobile: draft.whatsappMobile?.trim(),
         address: draft.address?.trim(),
         company: draft.company?.trim(),
       });
@@ -191,15 +207,15 @@ export default function ProfileDetails() {
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalCard}>
-          <Text style={styles.modalTitle}>Use this photo?</Text>
-          <Text style={styles.modalSubtitle}>This will be your new profile photo.</Text>
+          <Text style={styles.modalTitle}>{t("use_this_photo")}</Text>
+          <Text style={styles.modalSubtitle}>{t("profile_photo_subtitle")}</Text>
           {previewPhoto && (
             <Image source={{ uri: previewPhoto }} style={styles.modalPreview} />
           )}
           <View style={styles.modalActions}>
             <Pressable style={styles.modalCancelBtn} onPress={cancelPhotoPreview}>
               <Ionicons name="close-circle-outline" size={20} color="#94A3B8" />
-              <Text style={styles.modalCancelText}>Cancel</Text>
+              <Text style={styles.modalCancelText}>{t("cancel")}</Text>
             </Pressable>
             <Pressable style={styles.modalConfirmBtn} onPress={confirmPhotoUpload} disabled={saving}>
               <LinearGradient
@@ -213,7 +229,7 @@ export default function ProfileDetails() {
                 ) : (
                   <>
                     <Ionicons name="checkmark-circle-outline" size={20} color="#FFF" />
-                    <Text style={styles.modalConfirmText}>Use Photo</Text>
+                    <Text style={styles.modalConfirmText}>{t("use_photo")}</Text>
                   </>
                 )}
               </LinearGradient>
@@ -253,8 +269,8 @@ export default function ProfileDetails() {
           </Pressable>
           <View style={{ flex: 1, marginLeft: 6 }}>
             <Text style={styles.headerKicker}>OnlineGo Logistics</Text>
-            <Text style={styles.headerTitle}>Profile Details</Text>
-            <Text style={styles.headerSubtitle}>Manage your account & identity</Text>
+            <Text style={styles.headerTitle}>{t("profile")}</Text>
+            <Text style={styles.headerSubtitle}>{t("manage_account_identity")}</Text>
           </View>
         </LinearGradient>
 
@@ -289,34 +305,31 @@ export default function ProfileDetails() {
                   >
                     <Ionicons name={editing ? "close" : "create-outline"} size={16} color={editing ? "#EF4444" : DARK_GLASS_THEME.electricBlue} />
                     <Text style={[styles.editText, { color: editing ? "#EF4444" : DARK_GLASS_THEME.electricBlue }]}>
-                      {editing ? "Cancel" : "Edit Details"}
+                      {editing ? t("cancel") : t("edit_details")}
                     </Text>
                   </Pressable>
                 </View>
 
-                <View style={styles.readonlySection}>
-                  <ReadonlyRow icon="finger-print-outline" label="User ID" value={profile._id} />
-                  <ReadonlyRow icon="shield-checkmark-outline" label="Status" value={profile.isActive === false ? "Inactive" : "Active"} />
-                </View>
-
                 <EditableField
-                  label="Full Name"
+                  label={t("full_name")}
                   icon="person-outline"
+                  iconColor="#8B5CF6"
                   editable={editing}
                   value={draft.name}
                   onChangeText={(text: string) => setValue("name", text)}
                 />
                 <EditableField
-                  label="Username"
-                  icon="person-circle-outline"
+                  label={t("company_name")}
+                  icon="business-outline"
+                  iconColor="#EC4899"
                   editable={editing}
-                  value={draft.username}
-                  autoCapitalize="none"
-                  onChangeText={(text: string) => setValue("username", text)}
+                  value={draft.company || ""}
+                  onChangeText={(text: string) => setValue("company", text)}
                 />
                 <EditableField
-                  label="Email Address"
+                  label={t("email_address")}
                   icon="mail-outline"
+                  iconColor="#EF4444"
                   editable={editing}
                   value={draft.email || ""}
                   keyboardType="email-address"
@@ -324,28 +337,45 @@ export default function ProfileDetails() {
                   onChangeText={(text: string) => setValue("email", text)}
                 />
                 <EditableField
-                  label="Phone Number"
+                  label={t("phone_number")}
                   icon="call-outline"
+                  iconColor="#10B981"
                   editable={editing}
                   value={draft.mobile || ""}
                   keyboardType="phone-pad"
                   onChangeText={(text: string) => setValue("mobile", text)}
                 />
                 <EditableField
-                  label="Address"
+                  label={t("alternate_number")}
+                  icon="phone-portrait-outline"
+                  iconColor="#06B6D4"
+                  editable={editing}
+                  value={draft.alternateMobile || ""}
+                  keyboardType="phone-pad"
+                  onChangeText={(text: string) => setValue("alternateMobile", text)}
+                />
+                <EditableField
+                  label={t("whatsapp_number")}
+                  icon="logo-whatsapp"
+                  iconColor="#25D366"
+                  editable={editing}
+                  value={draft.whatsappMobile || ""}
+                  keyboardType="phone-pad"
+                  onChangeText={(text: string) => setValue("whatsappMobile", text)}
+                />
+                <EditableField
+                  label={t("address_label")}
                   icon="location-outline"
+                  iconColor="#F59E0B"
                   editable={editing}
                   value={draft.address || ""}
                   multiline
                   onChangeText={(text: string) => setValue("address", text)}
                 />
-                <EditableField
-                  label="Company"
-                  icon="business-outline"
-                  editable={editing}
-                  value={draft.company || ""}
-                  onChangeText={(text: string) => setValue("company", text)}
-                />
+
+                <View style={[styles.readonlySection, { marginTop: 24, marginBottom: 4 }]}>
+                  <ReadonlyRow icon="shield-checkmark-outline" label={t("status")} value={profile.isActive === false ? t("inactive") : t("active")} />
+                </View>
 
                 {editing && (
                   <Pressable onPress={saveProfile} disabled={saving} style={styles.saveWrapper}>
@@ -360,7 +390,7 @@ export default function ProfileDetails() {
                       ) : (
                         <>
                           <Ionicons name="cloud-upload-outline" size={18} color="#FFFFFF" />
-                          <Text style={styles.saveText}>Save Changes</Text>
+                          <Text style={styles.saveText}>{t("save_changes")}</Text>
                         </>
                       )}
                     </LinearGradient>
@@ -390,7 +420,9 @@ function ReadonlyRow({ icon, label, value }: { icon: keyof typeof Ionicons.glyph
   );
 }
 
-function EditableField({ icon, label, editable, ...props }: any) {
+function EditableField({ icon, iconColor, label, editable, ...props }: any) {
+  const activeColor = iconColor || DARK_GLASS_THEME.electricBlue;
+  const inactiveColor = "#94A3B8";
   return (
     <View style={styles.editableWrap}>
       <Text style={styles.label}>{label}</Text>
@@ -399,12 +431,17 @@ function EditableField({ icon, label, editable, ...props }: any) {
         !editable && styles.disabledInput,
         editable && styles.activeInputRow
       ]}>
-        <Ionicons name={icon} size={18} color={editable ? DARK_GLASS_THEME.electricBlue : "#94A3B8"} />
+        <View style={[
+          styles.fieldIconContainer,
+          { backgroundColor: editable ? `${activeColor}12` : `${inactiveColor}0C` }
+        ]}>
+          <Ionicons name={icon} size={18} color={editable ? activeColor : inactiveColor} />
+        </View>
         <TextInput
           editable={editable}
           placeholder={label}
           placeholderTextColor="#94A3B8"
-          style={[styles.input, props.multiline && styles.textArea]}
+          style={[styles.input, props.multiline && styles.textArea, { marginLeft: 6 }]}
           {...props}
         />
       </View>
@@ -415,6 +452,13 @@ function EditableField({ icon, label, editable, ...props }: any) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+  },
+  fieldIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
   header: {
     minHeight: 112,

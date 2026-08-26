@@ -24,6 +24,8 @@ api.interceptors.request.use(async (config) => {
     config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
   }
+  config.headers = config.headers ?? {};
+  config.headers['Bypass-Tunnel-Reminder'] = 'true';
   console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
   return config;
 }, (error) => {
@@ -37,9 +39,19 @@ api.interceptors.response.use((response) => {
 }, (error) => {
   console.warn("[API Response Error]", {
     url: error.config?.url,
+    baseURL: error.config?.baseURL,
     status: error.response?.status,
     message: error.message,
     data: error.response?.data
   });
+  
+  if (!error.response) {
+    // Network Error
+    require('react-native').Alert.alert(
+      "Network Error", 
+      `Could not connect to ${error.config?.baseURL}. Please ensure your phone and PC are on the same Wi-Fi, and your PC's firewall allows port 5010.`
+    );
+  }
+  
   return Promise.reject(error);
 });

@@ -26,6 +26,10 @@ const parcelRequestSchema = mongoose.Schema({
     deliveryCity: {
         type: String,
     },
+    deliveryLocation: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'DeliveryLocation',
+    },
     pickupDate: {
         type: Date,
     },

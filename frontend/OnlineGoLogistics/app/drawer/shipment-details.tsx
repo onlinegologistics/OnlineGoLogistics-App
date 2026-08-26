@@ -22,6 +22,7 @@ import {
 } from "../../src/services/logisticsApi";
 import { DARK_GLASS_THEME } from "../../constants/theme";
 import Toast from 'react-native-toast-message';
+import { useTranslation } from "react-i18next";
 
 type Draft = {
   customerName: string;
@@ -78,6 +79,7 @@ const toDraft = (shipment: ShipmentDetails): Draft => ({
 });
 
 export default function ShipmentDetailsScreen() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ id?: string }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const [shipment, setShipment] = useState<ShipmentDetails | null>(null);
@@ -212,10 +214,10 @@ export default function ShipmentDetailsScreen() {
             <Ionicons name="chevron-back" size={22} color={DARK_GLASS_THEME.textPrimary} />
           </Pressable>
           <View style={{ flex: 1 }}>
-            <Text style={styles.headerKicker}>Shipment Details</Text>
+            <Text style={styles.headerKicker}>{t("booking_details")}</Text>
             <Text style={styles.headerTitle}>{shipment?.bookingId || "Loading..."}</Text>
             <Text style={styles.headerSubtitle}>
-              {shipment ? `${shipment.pickupCity} to ${shipment.deliveryCity}` : "Complete parcel information"}
+              {shipment ? `${shipment.pickupCity} ${t("to", { defaultValue: "to" })} ${shipment.deliveryCity}` : t("complete_parcel_info")}
             </Text>
           </View>
         </LinearGradient>
@@ -228,17 +230,17 @@ export default function ShipmentDetailsScreen() {
           <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
             <View style={styles.summaryCard}>
               <View>
-                <Text style={styles.summaryLabel}>Order ID</Text>
+                <Text style={styles.summaryLabel}>{t("order_id")}</Text>
                 <Text style={styles.summaryValue}>{shipment.bookingId}</Text>
               </View>
               <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
-                <Text style={[styles.statusText, { color: badge.text }]}>{status}</Text>
+                <Text style={[styles.statusText, { color: badge.text }]}>{t(status.toLowerCase().replace(/ /g, "_"))}</Text>
               </View>
             </View>
 
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>Shipment Information</Text>
+                <Text style={styles.cardTitle}>{t("shipment_information")}</Text>
                 <Pressable
                   style={styles.editButton}
                   onPress={() => {
@@ -251,22 +253,22 @@ export default function ShipmentDetailsScreen() {
                   }}
                 >
                   <Ionicons name={editing ? "close" : "create-outline"} size={18} color={DARK_GLASS_THEME.cyan} />
-                  <Text style={styles.editText}>{editing ? "Cancel" : "Edit"}</Text>
+                  <Text style={styles.editText}>{editing ? t("cancel") : t("edit")}</Text>
                 </Pressable>
               </View>
 
-              <EditField label="Customer Name" icon="person-outline" editable={editing} value={draft.customerName} onChangeText={(text: string) => setValue("customerName", text)} />
-              <EditField label="Mobile Number" icon="call-outline" editable={editing} value={draft.mobileNumber} keyboardType="phone-pad" onChangeText={(text: string) => setValue("mobileNumber", text)} />
-              <EditField label="Pickup Address" icon="location-outline" editable={editing} value={draft.pickupAddress} multiline onChangeText={(text: string) => setValue("pickupAddress", text)} />
-              <EditField label="Delivery Address" icon="navigate-outline" editable={editing} value={draft.deliveryAddress} multiline onChangeText={(text: string) => setValue("deliveryAddress", text)} />
-              <EditField label="Pickup City" icon="business-outline" editable={editing} value={draft.pickupCity} onChangeText={(text: string) => setValue("pickupCity", text)} />
-              <EditField label="Delivery City" icon="business-outline" editable={editing} value={draft.deliveryCity} onChangeText={(text: string) => setValue("deliveryCity", text)} />
-              <EditField label="Parcel Type" icon="cube-outline" editable={editing} value={draft.parcelType} onChangeText={(text: string) => setValue("parcelType", text)} />
-              <EditField label="Parcel Weight (kg)" icon="scale-outline" editable={editing} value={draft.parcelWeight} keyboardType="numeric" onChangeText={(text: string) => setValue("parcelWeight", text)} />
-              <EditField label="Quantity" icon="albums-outline" editable={editing} value={draft.quantity} keyboardType="numeric" onChangeText={(text: string) => setValue("quantity", text)} />
-              <EditField label="Transport Type" icon="car-outline" editable={editing} value={draft.transportType} onChangeText={(text: string) => setValue("transportType", text)} />
-              <EditField label="Expected Delivery Date" icon="calendar-outline" editable={editing} value={draft.expectedDeliveryDate} onChangeText={(text: string) => setValue("expectedDeliveryDate", text)} />
-              <EditField label="Notes / Instructions" icon="document-text-outline" editable={editing} value={draft.notes} multiline onChangeText={(text: string) => setValue("notes", text)} />
+              <EditField label={t("customer_name")} icon="person-outline" editable={editing} value={draft.customerName} onChangeText={(text: string) => setValue("customerName", text)} />
+              <EditField label={t("mobile_number")} icon="call-outline" editable={editing} value={draft.mobileNumber} keyboardType="phone-pad" onChangeText={(text: string) => setValue("mobileNumber", text)} />
+              <EditField label={t("pickup_address_business_address")} icon="location-outline" editable={editing} value={draft.pickupAddress} multiline onChangeText={(text: string) => setValue("pickupAddress", text)} />
+              <EditField label={t("delivery_address")} icon="navigate-outline" editable={editing} value={draft.deliveryAddress} multiline onChangeText={(text: string) => setValue("deliveryAddress", text)} />
+              <EditField label={t("pickup_city")} icon="business-outline" editable={editing} value={draft.pickupCity} onChangeText={(text: string) => setValue("pickupCity", text)} />
+              <EditField label={t("delivery_city")} icon="business-outline" editable={editing} value={draft.deliveryCity} onChangeText={(text: string) => setValue("deliveryCity", text)} />
+              <EditField label={t("parcel_type")} icon="cube-outline" editable={editing} value={draft.parcelType} onChangeText={(text: string) => setValue("parcelType", text)} />
+              <EditField label={t("weight")} icon="scale-outline" editable={editing} value={draft.parcelWeight} keyboardType="numeric" onChangeText={(text: string) => setValue("parcelWeight", text)} />
+              <EditField label={t("quantity")} icon="albums-outline" editable={editing} value={draft.quantity} keyboardType="numeric" onChangeText={(text: string) => setValue("quantity", text)} />
+              <EditField label={t("transport_type")} icon="car-outline" editable={editing} value={draft.transportType} onChangeText={(text: string) => setValue("transportType", text)} />
+              <EditField label={t("expected_delivery")} icon="calendar-outline" editable={editing} value={draft.expectedDeliveryDate} onChangeText={(text: string) => setValue("expectedDeliveryDate", text)} />
+              <EditField label={t("notes_instructions")} icon="document-text-outline" editable={editing} value={draft.notes} multiline onChangeText={(text: string) => setValue("notes", text)} />
 
               {editing && (
                 <Pressable onPress={saveShipment} disabled={saving} style={styles.saveWrapper}>
@@ -279,7 +281,7 @@ export default function ShipmentDetailsScreen() {
                     ) : (
                       <>
                         <Ionicons name="save-outline" size={18} color="#FFFFFF" />
-                        <Text style={styles.saveText}>Save Shipment</Text>
+                        <Text style={styles.saveText}>{t("save_shipment")}</Text>
                       </>
                     )}
                   </LinearGradient>

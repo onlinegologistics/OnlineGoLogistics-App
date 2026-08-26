@@ -15,7 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+// import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { DARK_GLASS_THEME } from '../../constants/theme';
 import Toast from 'react-native-toast-message';
 
@@ -24,7 +24,7 @@ const { width } = Dimensions.get('window');
 export default function PhoneOtpScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
-  const [confirmResult, setConfirmResult] = useState<FirebaseAuthTypes.ConfirmationResult | null>(null);
+  const [confirmResult, setConfirmResult] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Task 6 & 10: Where OTP is sent
@@ -40,10 +40,10 @@ export default function PhoneOtpScreen() {
 
     try {
       setLoading(true);
-      // Firebase triggers SMS OTP transmission to the real number here:
-      const confirmation = await auth().signInWithPhoneNumber(phoneNumber.trim());
-      setConfirmResult(confirmation);
-      Toast.show({ type: 'success', text1: 'OTP Sent', text2: 'An OTP has been sent to your phone number via SMS.' });
+      // Mocking Firebase Auth for Expo Go
+      // const confirmation = await auth().signInWithPhoneNumber(phoneNumber.trim());
+      setConfirmResult({ mock: true });
+      Toast.show({ type: 'success', text1: 'OTP Sent (Mock)', text2: 'Mock OTP sent for Expo Go testing.' });
     } catch (error: any) {
       console.error('Firebase signInWithPhoneNumber failed:', error.message);
       Toast.show({ type: 'error', text1: 'Error', text2: error.message || 'Failed to send OTP. Please try again.' });
@@ -67,11 +67,13 @@ export default function PhoneOtpScreen() {
     try {
       setLoading(true);
       // 1. Where OTP is verified on Firebase server:
-      const result = await confirmResult.confirm(otp.trim());
+      // const result = await confirmResult.confirm(otp.trim());
+      
+      const result = { user: { uid: 'mock-uid', phoneNumber: phoneNumber.trim(), getIdToken: async () => 'mock-token' } };
 
       if (result && result.user) {
         // Verification succeeded!
-        Toast.show({ type: 'success', text1: 'Success', text2: 'Phone number verified successfully!' });
+        Toast.show({ type: 'success', text1: 'Success', text2: 'Phone number verified successfully! (Mock)' });
 
         // 2. Get Firebase user uid, phone number, and ID token:
         const idToken = await result.user.getIdToken();

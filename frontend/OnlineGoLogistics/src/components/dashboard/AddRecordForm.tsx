@@ -11,11 +11,15 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import Toast from 'react-native-toast-message';
+import { useTranslation } from "react-i18next";
 import {
   AddShipmentPayload,
   AddressSuggestion,
   getMobileUserDefaults,
   searchAddressSuggestions,
+  Branch,
+  getCities,
+  getBranches,
 } from "../../services/logisticsApi";
 import { getPickupAddressesApi, addPickupAddressApi, PickupAddressResponse } from "../../../api/auth";
 import { DARK_GLASS_THEME } from "../../../constants/theme";
@@ -27,9 +31,53 @@ const initialShared = {
   pickupCity: "",
 };
 
+const STATIC_CITIES = [
+  "Ahmadnagar",
+  "Nasik",
+  "Waluj",
+  "Yavatmal",
+  "Sambhaji Nagar",
+  "Chandrapur",
+  "Jalna",
+  "Nagpur",
+  "Indore",
+  "Lonar",
+  "Mehkar",
+  "Shegaon",
+  "Washim",
+  "Karanjalad",
+  "Akola",
+  "Shirdi",
+  "Amravati",
+  "Dhule",
+  "Hydrabad",
+  "Khamgaon",
+  "Chikhli",
+  "Jalgaon",
+  "Risod",
+  "Bhandara",
+  "Raipur",
+  "Surat",
+  "Sillod",
+  "Panjim",
+  "Madgaon",
+  "Manora",
+  "Bhilai",
+  "Bhopal",
+  "Ujjain",
+  "Hyderabad",
+  "Arni",
+  "Pritampur",
+  "Mapusa (Goa)",
+  "Burhanpur",
+  "Dharni",
+];
+
 const createShipment = () => ({
   deliveryAddress: "",
   deliveryCity: "",
+  deliveryLocation: "",
+  deliveryBranch: "",
   parcelType: "",
   parcelWeight: "",
   quantity: "",
@@ -57,6 +105,7 @@ export default function AddRecordForm({
   onSubmit: (payloads: AddShipmentPayload[]) => Promise<void>;
   loading: boolean;
 }) {
+  const { t } = useTranslation();
   const [shared, setShared] = useState<SharedState>(initialShared);
   const [defaultShared, setDefaultShared] = useState<SharedState>(initialShared);
   const [shipments, setShipments] = useState<ShipmentState[]>([createShipment()]);
@@ -69,6 +118,10 @@ export default function AddRecordForm({
   const [newAddressVal, setNewAddressVal] = useState("");
   const [newAddressCity, setNewAddressCity] = useState("");
   const [savingNewAddress, setSavingNewAddress] = useState(false);
+
+
+  const [availableCities, setAvailableCities] = useState<string[]>(STATIC_CITIES);
+  const [loadingCities, setLoadingCities] = useState(false);
 
   const fetchAddresses = async () => {
     try {
@@ -130,6 +183,25 @@ export default function AddRecordForm({
       .catch(() => {});
 
     fetchAddresses();
+
+    setLoadingCities(true);
+    getCities()
+      .then((citiesList) => {
+        if (active) {
+          if (citiesList && citiesList.length > 0) {
+            setAvailableCities(citiesList);
+          } else {
+            setAvailableCities(STATIC_CITIES);
+          }
+        }
+      })
+      .catch((err) => {
+        console.log("Failed to fetch cities from backend, using static list:", err);
+        if (active) setAvailableCities(STATIC_CITIES);
+      })
+      .finally(() => {
+        if (active) setLoadingCities(false);
+      });
 
     return () => {
       active = false;
@@ -203,18 +275,27 @@ export default function AddRecordForm({
     if (!validate()) return;
 
     await onSubmit(
-      shipments.map((shipment) => ({
-        customerName: shared.customerName.trim(),
-        mobileNumber: shared.mobileNumber.trim(),
-        pickupAddress: shared.pickupAddress.trim(),
-        pickupCity: shared.pickupCity.trim(),
-        deliveryAddress: shipment.deliveryAddress.trim(),
-        deliveryCity: shipment.deliveryCity.trim(),
-        parcelType: shipment.parcelType.trim(),
-        parcelWeight: Number(shipment.parcelWeight),
-        quantity: Number(shipment.quantity),
-        notes: shipment.notes.trim(),
-      }))
+      shipments.map((shipment) => {
+        const addr = shipment.deliveryAddress.trim();
+        const city = shipment.deliveryCity.trim();
+        const finalDeliveryAddress = addr.toLowerCase().includes(city.toLowerCase())
+          ? addr
+          : `${addr}, ${city}`;
+
+        return {
+          customerName: shared.customerName.trim(),
+          mobileNumber: shared.mobileNumber.trim(),
+          pickupAddress: shared.pickupAddress.trim(),
+          pickupCity: shared.pickupCity.trim(),
+          deliveryAddress: finalDeliveryAddress,
+          deliveryCity: city,
+          deliveryLocation: shipment.deliveryLocation || undefined,
+          parcelType: shipment.parcelType.trim(),
+          parcelWeight: Number(shipment.parcelWeight),
+          quantity: Number(shipment.quantity),
+          notes: shipment.notes.trim(),
+        };
+      })
     );
 
     clearForm();
@@ -222,14 +303,15 @@ export default function AddRecordForm({
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>New Shipment</Text>
-      <Text style={styles.subtitle}>
-        Use one pickup address and add multiple delivery shipments when needed.
+      <Text style={styles.title}>{t("new_shipment")}</Text>
+      <Text style={styles.subtitle}>{t("use_one")}
       </Text>
 
-      <Text style={styles.sectionLabel}>Pickup Details</Text>
-      <Field label="Customer Name" value={shared.customerName} onChangeText={(text: string) => setSharedValue("customerName", text)} error={sharedErrors.customerName} />
-      <Field label="Mobile Number" value={shared.mobileNumber} onChangeText={(text: string) => setSharedValue("mobileNumber", text)} error={sharedErrors.mobileNumber} keyboardType="phone-pad" />
+      <Text style={styles.sectionLabel}>{t("pickup_details")}</Text>
+      <Field label={t("customer_name")} value={shared.customerName} onChangeText={(text: string) => setSharedValue("customerName", text)} error={sharedErrors.customerName} />
+      <Field label={t("mobile_number")} value={shared.mobileNumber} onChangeText={(text: string) => setSharedValue("mobileNumber", text)} error={sharedErrors.mobileNumber} keyboardType="phone-pad" />
+
+      <Text style={styles.sectionLabel}>{t("pickup_address_business_address")}</Text>
 
       {fetchingAddresses ? (
         <ActivityIndicator size="small" color={DARK_GLASS_THEME.electricBlue} style={{ marginVertical: 8 }} />
@@ -272,7 +354,7 @@ export default function AddRecordForm({
         style={styles.addLocationBtn}
         onPress={() => setNewAddressModalVisible(true)}
       >
-        <Text style={styles.addLocationBtnText}>+ Add another location</Text>
+        <Text style={styles.addLocationBtnText}>+ {t("add_another_location")}</Text>
       </Pressable>
 
       {/* Add Address Modal */}
@@ -284,10 +366,10 @@ export default function AddRecordForm({
       >
           <View style={styles.modalOverlayAddress}>
             <View style={styles.modalContentAddress}>
-              <Text style={styles.modalTitleAddress}>Add New Location</Text>
-              <Text style={styles.modalHintAddress}>Search and select address from map suggestions.</Text>
+              <Text style={styles.modalTitleAddress}>{t("add_new_location")}</Text>
+              <Text style={styles.modalHintAddress}>{t("search_select_address")}</Text>
               <AddressField
-                label="Search pickup location"
+                label={t("search_pickup_location")}
                 value={newAddressVal}
                 onChangeText={(text) => {
                   setNewAddressVal(text);
@@ -308,7 +390,7 @@ export default function AddRecordForm({
                   }}
                 disabled={savingNewAddress}
               >
-                <Text style={styles.modalBtnTextCancel}>Cancel</Text>
+                <Text style={styles.modalBtnTextCancel}>{t("cancel")}</Text>
               </Pressable>
               <Pressable
                 style={[styles.modalBtnAddress, styles.modalBtnSave]}
@@ -318,7 +400,7 @@ export default function AddRecordForm({
                 {savingNewAddress ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.modalBtnTextSave}>Save</Text>
+                  <Text style={styles.modalBtnTextSave}>{t("save")}</Text>
                 )}
               </Pressable>
             </View>
@@ -326,12 +408,12 @@ export default function AddRecordForm({
         </View>
       </Modal>
 
-      <Field label="Pickup City" value={shared.pickupCity} onChangeText={(text: string) => setSharedValue("pickupCity", text)} error={sharedErrors.pickupCity} />
+      <Field label={t("pickup_city")} value={shared.pickupCity} onChangeText={(text: string) => setSharedValue("pickupCity", text)} error={sharedErrors.pickupCity} />
 
       {shipments.map((shipment, index) => (
         <View key={index} style={styles.shipmentCard}>
           <View style={styles.shipmentHeader}>
-            <Text style={styles.shipmentTitle}>Delivery Shipment {index + 1}</Text>
+            <Text style={styles.shipmentTitle}>{t("delivery_shipment")} {index + 1}</Text>
             {shipments.length > 1 && (
               <Pressable style={styles.removeButton} onPress={() => removeShipment(index)}>
                 <Ionicons name="close" size={18} color="#EF4444" />
@@ -339,47 +421,103 @@ export default function AddRecordForm({
             )}
           </View>
 
+          <CitySearchField
+            label={t("delivery_city")}
+            value={shipment.deliveryCity}
+            placeholder={t("select_delivery_city")}
+            onChangeText={(city) => {
+              setShipmentValue(index, "deliveryCity", city);
+              const matchedKey = Object.keys(DUMMY_BRANCHES).find(
+                (k) => k.toLowerCase() === city.trim().toLowerCase()
+              );
+              if (matchedKey) {
+                setShipmentValue(index, "deliveryAddress", DUMMY_BRANCHES[matchedKey][0].address);
+              } else {
+                setShipmentValue(index, "deliveryAddress", "Online Go, 9209061234");
+              }
+            }}
+            onSelect={(city) => {
+              setShipmentValue(index, "deliveryCity", city);
+              const matchedKey = Object.keys(DUMMY_BRANCHES).find(
+                (k) => k.toLowerCase() === city.trim().toLowerCase()
+              );
+              if (matchedKey) {
+                setShipmentValue(index, "deliveryAddress", DUMMY_BRANCHES[matchedKey][0].address);
+              } else {
+                setShipmentValue(index, "deliveryAddress", "Online Go, 9209061234");
+              }
+            }}
+            error={shipmentErrors[index]?.deliveryCity}
+          />
+
           <AddressField
-            label="Delivery Address"
+            label={t("delivery_address")}
             value={shipment.deliveryAddress}
+            city={shipment.deliveryCity}
             error={shipmentErrors[index]?.deliveryAddress}
             onChangeText={(text) => setShipmentValue(index, "deliveryAddress", text)}
             onSelect={(suggestion) => {
               setShipmentValue(index, "deliveryAddress", suggestion.label);
-              if (suggestion.city) setShipmentValue(index, "deliveryCity", suggestion.city);
+              if (suggestion.city) {
+                const matchedCity = availableCities.find(
+                  (c) => c.toLowerCase() === suggestion.city.toLowerCase()
+                );
+                if (matchedCity) {
+                  setShipmentValue(index, "deliveryCity", matchedCity);
+                } else {
+                  const formattedCity = suggestion.city.charAt(0).toUpperCase() + suggestion.city.slice(1);
+                  if (!availableCities.includes(formattedCity)) {
+                    setAvailableCities((prev) => [...prev, formattedCity]);
+                  }
+                  setShipmentValue(index, "deliveryCity", formattedCity);
+                }
+              }
             }}
           />
-          <Field label="Delivery City" value={shipment.deliveryCity} onChangeText={(text: string) => setShipmentValue(index, "deliveryCity", text)} error={shipmentErrors[index]?.deliveryCity} />
-          <Field label="Parcel Type" value={shipment.parcelType} onChangeText={(text: string) => setShipmentValue(index, "parcelType", text)} error={shipmentErrors[index]?.parcelType} />
+
+          <SelectField
+            label={t("parcel_type")}
+            value={shipment.parcelType}
+            placeholder={t("select_parcel_type")}
+            options={[
+              { label: "Box", value: "Box" },
+              { label: "Bag", value: "Bag" },
+              { label: "Envelop", value: "Envelop" },
+              { label: "Bundle", value: "Bundle" },
+              { label: "Other", value: "Other" },
+            ]}
+            onSelect={(val) => setShipmentValue(index, "parcelType", val)}
+            error={shipmentErrors[index]?.parcelType}
+          />
 
           <View style={styles.row}>
             <View style={styles.half}>
-              <Field label="Weight (kg)" value={shipment.parcelWeight} onChangeText={(text: string) => setShipmentValue(index, "parcelWeight", text)} error={shipmentErrors[index]?.parcelWeight} keyboardType="numeric" />
+              <Field label={t("weight")} value={shipment.parcelWeight} onChangeText={(text: string) => setShipmentValue(index, "parcelWeight", text)} error={shipmentErrors[index]?.parcelWeight} keyboardType="numeric" />
             </View>
             <View style={styles.half}>
-              <Field label="Quantity" value={shipment.quantity} onChangeText={(text: string) => setShipmentValue(index, "quantity", text)} error={shipmentErrors[index]?.quantity} keyboardType="numeric" />
+              <Field label={t("quantity")} value={shipment.quantity} onChangeText={(text: string) => setShipmentValue(index, "quantity", text)} error={shipmentErrors[index]?.quantity} keyboardType="numeric" />
             </View>
           </View>
 
-          <Field label="Notes / Instructions" value={shipment.notes} onChangeText={(text: string) => setShipmentValue(index, "notes", text)} multiline />
+          <Field label={t("notes_instructions")} value={shipment.notes} onChangeText={(text: string) => setShipmentValue(index, "notes", text)} multiline />
         </View>
       ))}
 
       <Pressable style={styles.addMoreButton} onPress={addMoreShipment}>
         <Ionicons name="add-circle-outline" size={20} color={DARK_GLASS_THEME.electricBlue} />
-        <Text style={styles.addMoreText}>Add more shipment</Text>
+        <Text style={styles.addMoreText}>{t("add_more_shipment")}</Text>
       </Pressable>
 
       <View style={styles.buttonRow}>
         <Pressable style={styles.clearButton} onPress={clearForm} disabled={loading}>
-          <Text style={styles.clearText}>Clear Form</Text>
+          <Text style={styles.clearText}>{t("clear_form")}</Text>
         </Pressable>
         <Pressable style={styles.submitButton} onPress={submit} disabled={loading}>
           <LinearGradient
             colors={[DARK_GLASS_THEME.electricBlue, DARK_GLASS_THEME.purple]}
             style={styles.submitGrad}
           >
-            {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitText}>Create Shipment</Text>}
+            {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitText}>{t("submit")}</Text>}
           </LinearGradient>
         </Pressable>
       </View>
@@ -401,15 +539,331 @@ function Field({ label, error, style, ...props }: any) {
   );
 }
 
-function AddressField({
+function SelectField({
   label,
   value,
+  options,
+  placeholder,
+  error,
+  onSelect,
+  loading = false,
+}: {
+  label: string;
+  value: string;
+  options: { label: string; value: string }[];
+  placeholder?: string;
+  error?: string;
+  onSelect: (val: string) => void;
+  loading?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const selectedOption = options.find((opt) => opt.value === value);
+  const displayLabel = selectedOption ? selectedOption.label : "";
+
+  return (
+    <View style={styles.fieldWrap}>
+      <Pressable
+        style={[styles.dropdownInput, error && styles.inputError]}
+        onPress={() => setOpen(!open)}
+      >
+        <View style={{ flex: 1, justifyContent: "center" }}>
+          <Text style={[styles.dropdownValue, !value && styles.dropdownPlaceholder]}>
+            {displayLabel || placeholder || `Select ${label}`}
+          </Text>
+        </View>
+        <View style={styles.addressIcon}>
+          {loading ? (
+            <ActivityIndicator size="small" color={DARK_GLASS_THEME.electricBlue} />
+          ) : (
+            <Ionicons
+              name={open ? "chevron-up" : "chevron-down"}
+              size={18}
+              color={DARK_GLASS_THEME.electricBlue}
+            />
+          )}
+        </View>
+      </Pressable>
+      {open && options.length > 0 && (
+        <View style={styles.suggestionBox}>
+          {options.map((item) => (
+            <Pressable
+              key={item.value}
+              style={[
+                styles.suggestionItem,
+                value === item.value && { backgroundColor: "rgba(37, 99, 235, 0.08)" },
+              ]}
+              onPress={() => {
+                onSelect(item.value);
+                setOpen(false);
+              }}
+            >
+              <Text
+                style={[
+                  styles.suggestionText,
+                  value === item.value && { color: DARK_GLASS_THEME.electricBlue, fontWeight: "900" },
+                ]}
+              >
+                {item.label}
+              </Text>
+              {value === item.value && (
+                <Ionicons
+                  name="checkmark-sharp"
+                  size={16}
+                  color={DARK_GLASS_THEME.electricBlue}
+                  style={{ marginLeft: "auto" }}
+                />
+              )}
+            </Pressable>
+          ))}
+        </View>
+      )}
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+    </View>
+  );
+}
+
+function CitySearchField({
+  label,
+  value,
+  placeholder,
   error,
   onChangeText,
   onSelect,
 }: {
   label: string;
   value: string;
+  placeholder?: string;
+  error?: string;
+  onChangeText: (val: string) => void;
+  onSelect: (val: string) => void;
+}) {
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [focused, setFocused] = useState(false);
+
+  const handleTextChange = (text: string) => {
+    onChangeText(text);
+    if (!text.trim()) {
+      setSuggestions([]);
+      return;
+    }
+    const filtered = STATIC_CITIES.filter((city) =>
+      city.toLowerCase().includes(text.toLowerCase())
+    );
+    setSuggestions(filtered);
+  };
+
+  return (
+    <View style={styles.fieldWrap}>
+      <View style={[styles.addressInputWrap, error && styles.inputError]}>
+        <TextInput
+          placeholder={placeholder || label}
+          placeholderTextColor="#64748B"
+          style={[styles.input, styles.addressInput]}
+          value={value}
+          onChangeText={handleTextChange}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setTimeout(() => setFocused(false), 250)}
+        />
+        <View style={styles.addressIcon}>
+          <Ionicons name="search-outline" size={19} color={DARK_GLASS_THEME.electricBlue} />
+        </View>
+      </View>
+      {focused && suggestions.length > 0 && (
+        <View style={styles.suggestionBox}>
+          {suggestions.map((city) => (
+            <Pressable
+              key={city}
+              style={styles.suggestionItem}
+              onPress={() => {
+                onSelect(city);
+                setSuggestions([]);
+              }}
+            >
+              <Ionicons name="location-outline" size={17} color={DARK_GLASS_THEME.electricBlue} />
+              <Text style={styles.suggestionText}>{city}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+    </View>
+  );
+}
+
+const DUMMY_BRANCHES: Record<string, { name: string; address: string }[]> = {
+  Ahmadnagar: [
+    { name: "Syndicate Travels", address: "Syndicate Travels, 8087879117" },
+  ],
+
+  Nasik: [
+    { name: "Shreenath Cargo", address: "Shreenath Cargo, 8767144753" },
+  ],
+
+  Waluj: [
+    { name: "Himalaya Travels", address: "Himalaya Travels, 99219 41234" },
+  ],
+
+  Yavatmal: [
+    { name: "Kanchan Tr. Chintamani Hotel", address: "Kanchan Tr. Chintamani Hotel, 9405687231" },
+  ],
+
+  "Sambhaji Nagar": [
+    { name: "Westline Travels", address: "Westline Travels, 8857986983" },
+  ],
+
+  Chandrapur: [
+    { name: "Mahakali Tr Bus Stand", address: "Mahakali Tr Bus Stand, 9422453211" },
+  ],
+
+  Jalna: [
+    { name: "Vikas Cargo", address: "Vikas Cargo, 9860572369" },
+  ],
+
+  Nagpur: [
+    { name: "Global Travels", address: "Global Travels, 9975301551" },
+  ],
+
+  Indore: [
+    { name: "Sanjay Travels", address: "Sanjay Travels, 9827545199" },
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+
+  Lonar: [
+    { name: "Vighnaharta Travels", address: "Vighnaharta Travels, 9067869495" },
+  ],
+
+  Mehkar: [
+    { name: "Chintamani Travels", address: "Chintamani Travels, 9923112933" },
+  ],
+
+  Shegaon: [
+    { name: "Avinash Travels", address: "Avinash Travels, 9422255577" },
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+
+  Washim: [
+    { name: "Khushi Travels", address: "Khushi Travels, 9146261298" },
+  ],
+
+  Karanjalad: [
+    { name: "Vaishnavi Travels", address: "Vaishnavi Travels, 9226995151" },
+  ],
+
+  Akola: [
+    { name: "Ekviara Travels", address: "Ekviara Travels, 7709946996" },
+  ],
+
+  Shirdi: [
+    { name: "Om Sai Ram Travels", address: "Om Sai Ram Travels, 9373347671" },
+  ],
+
+  Amravati: [
+    { name: "Vidharbha Travels", address: "Vidharbha Travels, 9860155510" },
+  ],
+
+  Dhule: [
+    { name: "Atharva Travels", address: "Atharva Travels, 8055524055" },
+  ],
+
+  Hydrabad: [
+    { name: "Bharat Travels", address: "Bharat Travels, 7875660954" },
+  ],
+
+  Hyderabad: [
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+
+  Khamgaon: [
+    { name: "Mahendra Disha Trvls", address: "Mahendra Disha Trvls, 98223 48034" },
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+
+  Chikhli: [
+    { name: "Ashok Tr. Neri Naka Parking", address: "Ashok Tr. Neri Naka Parking, 9704895060" },
+  ],
+
+  Jalgaon: [
+    { name: "Ashok Tr. Neri Naka Parking", address: "Ashok Tr. Neri Naka Parking, 9704895060" },
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+
+  Risod: [
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+
+  Bhandara: [
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+
+  Raipur: [
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+
+  Surat: [
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+
+  Sillod: [
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+
+  Panjim: [
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+
+  Madgaon: [
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+
+  Manora: [
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+
+  Bhilai: [
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+
+  Bhopal: [
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+
+  Ujjain: [
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+
+  Arni: [
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+
+  Pritampur: [
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+
+  "Mapusa (Goa)": [
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+
+  Burhanpur: [
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+
+  Dharni: [
+    { name: "Online Go", address: "Online Go, 9209061234" },
+  ],
+};
+
+function AddressField({
+  label,
+  value,
+  city,
+  error,
+  onChangeText,
+  onSelect,
+}: {
+  label: string;
+  value: string;
+  city?: string;
   error?: string;
   onChangeText: (text: string) => void;
   onSelect: (suggestion: AddressSuggestion) => void;
@@ -419,6 +873,65 @@ function AddressField({
   const [selectedLabel, setSelectedLabel] = useState("");
 
   useEffect(() => {
+    if (value.trim() === selectedLabel.trim()) {
+      setSuggestions([]);
+      setLoading(false);
+      return;
+    }
+
+    if (city) {
+      let active = true;
+      setLoading(true);
+      
+      getBranches(city)
+        .then((dbBranches) => {
+          if (!active) return;
+          if (dbBranches && dbBranches.length > 0) {
+            const items: AddressSuggestion[] = dbBranches.map((b) => ({
+              id: b._id,
+              label: `${b.name}, ${b.address}`,
+              city: b.city,
+              latitude: 0,
+              longitude: 0,
+              source: "osm",
+            }));
+            setSuggestions(items);
+          } else {
+            const staticList = DUMMY_BRANCHES[city] || [];
+            const items: AddressSuggestion[] = staticList.map((b, i) => ({
+              id: `static-${city}-${i}`,
+              label: `${b.name}, ${b.address}`,
+              city: city,
+              latitude: 0,
+              longitude: 0,
+              source: "osm",
+            }));
+            setSuggestions(items);
+          }
+        })
+        .catch((err) => {
+          console.log("Failed to fetch branches from backend, using local static branches", err);
+          if (!active) return;
+          const staticList = DUMMY_BRANCHES[city] || [];
+          const items: AddressSuggestion[] = staticList.map((b, i) => ({
+            id: `static-${city}-${i}`,
+            label: `${b.name}, ${b.address}`,
+            city: city,
+            latitude: 0,
+            longitude: 0,
+            source: "osm",
+          }));
+          setSuggestions(items);
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+
+      return () => {
+        active = false;
+      };
+    }
+
     const query = value.trim();
     if (query.length < 2 || query === selectedLabel) {
       setSuggestions([]);
@@ -445,7 +958,7 @@ function AddressField({
       active = false;
       clearTimeout(timer);
     };
-  }, [selectedLabel, value]);
+  }, [selectedLabel, value, city]);
 
   const chooseSuggestion = (suggestion: AddressSuggestion) => {
     setSelectedLabel(suggestion.label);
@@ -520,9 +1033,8 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     color: DARK_GLASS_THEME.textPrimary,
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: "800",
-    textTransform: "uppercase",
     marginBottom: 10,
     marginTop: 8,
   },
@@ -573,6 +1085,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     color: DARK_GLASS_THEME.textPrimary,
     fontWeight: "700",
+  },
+  dropdownInput: {
+    minHeight: 52,
+    backgroundColor: "rgba(255,255,255,0.5)",
+    borderWidth: 1,
+    borderColor: DARK_GLASS_THEME.border,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  dropdownValue: {
+    color: DARK_GLASS_THEME.textPrimary,
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  dropdownPlaceholder: {
+    color: "#64748B",
+    fontWeight: "500",
   },
   addressInputWrap: {
     backgroundColor: "rgba(255,255,255,0.5)",

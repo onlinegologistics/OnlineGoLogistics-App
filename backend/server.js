@@ -5,7 +5,17 @@ const connectDB = require('./config/db');
 
 dotenv.config();
 
-connectDB();
+connectDB().then(async () => {
+    try {
+        const { seedDeliveryLocationsIfNeeded } = require('./controllers/deliveryLocationController');
+        await seedDeliveryLocationsIfNeeded();
+        
+        const { seedBranchesIfNeeded } = require('./controllers/branchController');
+        await seedBranchesIfNeeded();
+    } catch (err) {
+        console.error("Failed to run seeders on startup:", err.message);
+    }
+});
 
 const app = express();
 
@@ -83,6 +93,12 @@ app.use('/api/users', require('./routes/userRoutes'));
 // Shipment tracking routes
 app.use('/api/shipments', require('./routes/shipmentRoutes'));
 
+// Branch routes
+app.use('/api/branches', require('./routes/branchRoutes'));
+
+// Delivery Location routes
+app.use('/api/delivery-locations', require('./routes/deliveryLocationRoutes'));
+
 // 404 handler
 app.use((req, res) => {
     res.status(404).json({ message: 'Route not found' });
@@ -102,6 +118,6 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });

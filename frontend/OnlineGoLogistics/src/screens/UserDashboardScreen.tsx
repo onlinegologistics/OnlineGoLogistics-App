@@ -39,6 +39,7 @@ import { removeToken } from "../../utils/token";
 import { getProfileApi } from "../../api/auth";
 import { getNotificationsApi, markAsReadApi, NotificationResponse } from "../../api/notification";
 import Toast from 'react-native-toast-message';
+import { useTranslation } from "react-i18next";
 
 const emptyDashboard: CustomerDashboard = {
   totalBookings: 0,
@@ -53,6 +54,7 @@ const emptyDashboard: CustomerDashboard = {
 type DashboardTab = "home" | "add" | "shipments" | "track" | "wallet" | "profile";
 
 export default function UserDashboardScreen() {
+  const { t, i18n } = useTranslation();
   const params = useLocalSearchParams<{ tab?: string }>();
   const navigation = useNavigation();
   const [customerName, setCustomerName] = useState("Customer");
@@ -69,6 +71,11 @@ export default function UserDashboardScreen() {
     await removeToken();
     await AsyncStorage.clear();
     router.replace("/login");
+  };
+
+  const changeLanguage = async (lang: string) => {
+    await i18n.changeLanguage(lang);
+    await AsyncStorage.setItem("user-language", lang);
   };
 
   useEffect(() => {
@@ -163,12 +170,12 @@ export default function UserDashboardScreen() {
 
   const stats = useMemo(
     () => [
-      { label: "Bookings", value: dashboard.totalBookings, icon: "cube-outline" as const, colors: [DARK_GLASS_THEME.electricBlue, "#2F6F57"] as const },
-      { label: "Pending", value: dashboard.pendingShipments, icon: "time-outline" as const, colors: [DARK_GLASS_THEME.orange, "#E8C76D"] as const },
-      { label: "In Transit", value: dashboard.inTransit, icon: "navigate-outline" as const, colors: [DARK_GLASS_THEME.electricBlue, DARK_GLASS_THEME.purple] as const },
-      { label: "Delivered", value: dashboard.delivered, icon: "checkmark-done-outline" as const, colors: [DARK_GLASS_THEME.cyan, "#5DD39E"] as const },
+      { label: t("bookings"), value: dashboard.totalBookings, icon: "cube-outline" as const, colors: [DARK_GLASS_THEME.electricBlue, "#2F6F57"] as const },
+      { label: t("pending"), value: dashboard.pendingShipments, icon: "time-outline" as const, colors: [DARK_GLASS_THEME.orange, "#E8C76D"] as const },
+      { label: t("in_transit"), value: dashboard.inTransit, icon: "navigate-outline" as const, colors: [DARK_GLASS_THEME.electricBlue, DARK_GLASS_THEME.purple] as const },
+      { label: t("delivered"), value: dashboard.delivered, icon: "checkmark-done-outline" as const, colors: [DARK_GLASS_THEME.cyan, "#5DD39E"] as const },
     ],
-    [dashboard]
+    [dashboard, t]
   );
 
   // All unread notifications shown as stacked cards below hero banner
@@ -220,11 +227,11 @@ export default function UserDashboardScreen() {
         <Ionicons name="locate-outline" size={22} color={DARK_GLASS_THEME.electricBlue} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={styles.trackingTitle}>Track Shipment</Text>
+        <Text style={styles.trackingTitle}>{t("track_shipment")}</Text>
         <TextInput
           value={trackingId}
           onChangeText={setTrackingId}
-          placeholder="Enter tracking / booking ID"
+          placeholder={t("enter_tracking_booking_id")}
           placeholderTextColor="#64748B"
           style={styles.trackingInput}
         />
@@ -267,14 +274,14 @@ export default function UserDashboardScreen() {
 
   const renderSupportCard = (showAll = false) => (
     <View style={styles.supportCard}>
-      <SupportButton title="Call" icon="call-outline" onPress={() => Linking.openURL("tel:9545351234")} />
-      <SupportButton title="WhatsApp" icon="logo-whatsapp" onPress={() => Linking.openURL("whatsapp://send?phone=+919545351234")} />
-      <SupportButton title="Email" icon="mail-outline" onPress={() => Linking.openURL("mailto:support@onlinegologistics.in")} />
-      <SupportButton title="FAQ" icon="help-buoy-outline" onPress={() => router.push("/drawer/faq" as any)} />
+      <SupportButton title={t("call")} icon="call-outline" onPress={() => Linking.openURL("tel:9209061234")} />
+      <SupportButton title={t("whatsapp")} icon="logo-whatsapp" onPress={() => Linking.openURL("whatsapp://send?phone=+919209061234")} />
+      <SupportButton title={t("email")} icon="mail-outline" onPress={() => Linking.openURL("mailto:onlinegologistics@gmail.com")} />
+      <SupportButton title={t("faq")} icon="help-buoy-outline" onPress={() => router.push("/drawer/faq" as any)} />
       {showAll && (
         <>
-          <SupportButton title="Send Enquiry" icon="chatbubble-ellipses-outline" onPress={() => router.push("/drawer/enquiries" as any)} />
-          <SupportButton title="Send Complaint" icon="alert-circle-outline" onPress={() => router.push("/drawer/complaints" as any)} />
+          <SupportButton title={t("send_enquiry")} icon="chatbubble-ellipses-outline" onPress={() => router.push("/drawer/enquiries" as any)} />
+          <SupportButton title={t("send_complaint")} icon="alert-circle-outline" onPress={() => router.push("/drawer/complaints" as any)} />
         </>
       )}
     </View>
@@ -328,9 +335,9 @@ export default function UserDashboardScreen() {
     if (activeTab === "track") {
       return (
         <>
-          <SectionTitle title="Track Shipment" />
+          <SectionTitle title={t("track_shipment")} />
           {renderTrackingCard()}
-          <SectionTitle title="Recent Shipments" />
+          <SectionTitle title={t("recent_shipments")} />
           {renderShipmentList()}
         </>
       );
@@ -363,7 +370,7 @@ export default function UserDashboardScreen() {
                 </View>
               </LinearGradient>
               <View style={{ flex: 1 }}>
-                <Text style={styles.profileKicker}>Customer Account</Text>
+                <Text style={styles.profileKicker}>{t("customer_account")}</Text>
                 <Text style={styles.profileName}>{customerName}</Text>
                 <Text style={styles.profileMeta}>OnlineGo Logistics</Text>
               </View>
@@ -381,22 +388,45 @@ export default function UserDashboardScreen() {
 
           <View style={styles.profileActionsCard}>
             <ProfileActionRow
-              title="View Profile Details"
-              subtitle="Edit name, username, email and phone"
+              title={t("view_profile_details")}
+              subtitle={t("edit_profile_subtitle")}
               icon="person-circle-outline"
               onPress={() => router.push("/drawer/profile-details" as any)}
               color={DARK_GLASS_THEME.electricBlue}
+              
             />
             <ProfileActionRow
-              title="Logout"
-              subtitle="Sign out of your account"
+              title={t("logout")}
+              subtitle={t("sign_out_subtitle")}
               icon="log-out-outline"
               onPress={handleLogout}
               color="#EF4444"
             />
           </View>
 
-          <SectionTitle title="Support" />
+          <SectionTitle title={t("select_language")} />
+          <View style={styles.languageContainer}>
+            <Pressable 
+              style={[styles.langBtn, i18n.language === "en" && styles.langBtnActive]} 
+              onPress={() => changeLanguage("en")}
+            >
+              <Text style={[styles.langText, i18n.language === "en" && styles.langTextActive]}>English</Text>
+            </Pressable>
+            <Pressable 
+              style={[styles.langBtn, i18n.language === "hi" && styles.langBtnActive]} 
+              onPress={() => changeLanguage("hi")}
+            >
+              <Text style={[styles.langText, i18n.language === "hi" && styles.langTextActive]}>हिंदी</Text>
+            </Pressable>
+            <Pressable 
+              style={[styles.langBtn, i18n.language === "mr" && styles.langBtnActive]} 
+              onPress={() => changeLanguage("mr")}
+            >
+              <Text style={[styles.langText, i18n.language === "mr" && styles.langTextActive]}>मराठी</Text>
+            </Pressable>
+          </View>
+
+          <SectionTitle title={t("support")} />
           {renderSupportCard(true)}
         </>
       );
@@ -418,7 +448,7 @@ export default function UserDashboardScreen() {
             style={StyleSheet.absoluteFillObject}
           />
           <View style={styles.heroTextCol}>
-            <Text style={styles.heroKicker}>Hello, {customerName} 👋</Text>
+            <Text style={styles.heroKicker}>{t("welcome_back")}, {customerName} 👋</Text>
             <Text style={styles.heroTitle}>Move {"\n"}Anything,Anywhere</Text>
             <Text style={styles.heroSubtitle}>{"\n"}Fast. Safe. Reliable.</Text>
           </View>
@@ -429,7 +459,7 @@ export default function UserDashboardScreen() {
                 style={styles.heroButtonGrad}
               >
                 <Ionicons name="add-circle-outline" size={18} color="#FFFFFF" />
-                <Text style={styles.heroButtonText} numberOfLines={1}>Add Shipment</Text>
+                <Text style={styles.heroButtonText} numberOfLines={1}>{t("new_shipment")}</Text>
               </LinearGradient>
             </Pressable>
           </View>
@@ -498,17 +528,17 @@ export default function UserDashboardScreen() {
           ))}
         </View>
 
-        <SectionTitle title="Quick Actions" />
+        <SectionTitle title={t("quick_actions")} />
         <View style={styles.actionsGrid}>
-          <QuickActionCard title="New Shipment" icon="add-circle-outline" onPress={() => setActiveTab("add")} />
-          <QuickActionCard title="Track Shipment" icon="search-outline" onPress={() => setActiveTab("track")} />
-          <QuickActionCard title="My Shipments" icon="cube-outline" onPress={() => setActiveTab("shipments")} />
-          <QuickActionCard title="Send Enquiry" icon="help-buoy-outline" onPress={() => router.push("/drawer/enquiries" as any)} />
-          <QuickActionCard title="Branch Locator" icon="map-outline" onPress={() => router.push("/drawer/branch-locator")} />
-          <QuickActionCard title="Contact Support" icon="call-outline" onPress={() => Linking.openURL("tel:9545351234")} />
+          <QuickActionCard title={t("new_shipment")} icon="add-circle-outline" onPress={() => setActiveTab("add")} />
+          <QuickActionCard title={t("track_shipment")} icon="search-outline" onPress={() => setActiveTab("track")} />
+          <QuickActionCard title={t("my_shipments")} icon="cube-outline" onPress={() => setActiveTab("shipments")} />
+          <QuickActionCard title={t("send_enquiry")} icon="help-buoy-outline" onPress={() => router.push("/drawer/enquiries" as any)} />
+          <QuickActionCard title={t("branch_locator")} icon="map-outline" onPress={() => router.push("/drawer/branch-locator")} />
+          <QuickActionCard title={t("contact_support")} icon="call-outline" onPress={() => Linking.openURL("tel:9209061234")} />
         </View>
 
-        <SectionTitle title="Recent Shipments" />
+        <SectionTitle title={t("recent_shipments")} />
         {renderShipmentList(5)}
         {shipments.length > 5 && (
           <Pressable
@@ -1423,6 +1453,34 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 3,
     lineHeight: 16,
+  },
+  languageContainer: {
+    flexDirection: "row",
+    backgroundColor: "rgba(255, 255, 255, 0.78)",
+    borderRadius: 24,
+    padding: 6,
+    justifyContent: "space-between",
+    marginBottom: 10,
+    marginHorizontal: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.7)",
+  },
+  langBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderRadius: 18,
+  },
+  langBtnActive: {
+    backgroundColor: DARK_GLASS_THEME.electricBlue,
+  },
+  langText: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: DARK_GLASS_THEME.textPrimary,
+  },
+  langTextActive: {
+    color: "#FFFFFF",
   },
 });
 

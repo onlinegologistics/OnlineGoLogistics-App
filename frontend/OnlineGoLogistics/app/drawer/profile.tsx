@@ -13,6 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 
 import { removeToken } from "../../utils/token";
 
@@ -30,8 +31,14 @@ const COLORS = {
 };
 
 export default function Profile() {
+  const { t, i18n } = useTranslation();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  const changeLanguage = async (lang: string) => {
+    await i18n.changeLanguage(lang);
+    await AsyncStorage.setItem("user-language", lang);
+  };
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -51,10 +58,10 @@ export default function Profile() {
   }, []);
 
   const handleLogout = () => {
-    Alert.alert("Logout", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("logout"), t("sign_out_confirm"), [
+      { text: t("cancel"), style: "cancel" },
       {
-        text: "Logout",
+        text: t("logout"),
         style: "destructive",
         onPress: async () => {
           await removeToken();
@@ -81,7 +88,7 @@ export default function Profile() {
             <Ionicons name="arrow-back" size={22} color={COLORS.textPrimary} />
           </Pressable>
 
-          <Text style={styles.headerTitle}>Profile</Text>
+          <Text style={styles.headerTitle}>{t("profile")}</Text>
 
           <Pressable style={styles.iconBtn}>
             <Ionicons name="notifications-outline" size={22} color={COLORS.textPrimary} />
@@ -101,9 +108,9 @@ export default function Profile() {
           </View>
 
           <View style={{ flex: 1 }}>
-            <Text style={styles.accountLabel}>CUSTOMER ACCOUNT</Text>
+            <Text style={styles.accountLabel}>{t("profile").toUpperCase()}</Text>
             <Text style={styles.profileName}>{profile.name}</Text>
-            <Text style={styles.profileRole}>OnlineGo Logistics</Text>
+            <Text style={styles.profileRole}>{t("app_name")}</Text>
           </View>
 
           <Pressable
@@ -117,17 +124,17 @@ export default function Profile() {
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>0</Text>
-            <Text style={styles.statLabel}>Bookings</Text>
+            <Text style={styles.statLabel}>{t("bookings")}</Text>
           </View>
 
           <View style={styles.statCard}>
             <Text style={styles.statValue}>0</Text>
-            <Text style={styles.statLabel}>In Transit</Text>
+            <Text style={styles.statLabel}>{t("in_transit")}</Text>
           </View>
 
           <View style={styles.statCard}>
             <Text style={styles.statValue}>0</Text>
-            <Text style={styles.statLabel}>Delivered</Text>
+            <Text style={styles.statLabel}>{t("delivered")}</Text>
           </View>
         </View>
 
@@ -141,8 +148,8 @@ export default function Profile() {
             </View>
 
             <View style={{ flex: 1 }}>
-              <Text style={styles.menuTitle}>View Profile Details</Text>
-              <Text style={styles.menuSubtitle}>Edit name, email and phone</Text>
+              <Text style={styles.menuTitle}>{t("view_profile_details")}</Text>
+              <Text style={styles.menuSubtitle}>{t("edit_profile_subtitle")}</Text>
             </View>
 
             <Ionicons name="chevron-forward" size={22} color={COLORS.textSecondary} />
@@ -156,45 +163,67 @@ export default function Profile() {
             </View>
 
             <View style={{ flex: 1 }}>
-              <Text style={styles.menuTitle}>Logout</Text>
-              <Text style={styles.menuSubtitle}>Sign out of your account</Text>
+              <Text style={styles.menuTitle}>{t("logout")}</Text>
+              <Text style={styles.menuSubtitle}>{t("sign_out_subtitle")}</Text>
             </View>
 
             <Ionicons name="chevron-forward" size={22} color={COLORS.textSecondary} />
           </Pressable>
         </View>
 
-        <Text style={styles.sectionTitle}>Support</Text>
+        <Text style={styles.sectionTitle}>{t("select_language")}</Text>
+        <View style={styles.languageContainer}>
+          <Pressable 
+            style={[styles.langBtn, i18n.language === "en" && styles.langBtnActive]} 
+            onPress={() => changeLanguage("en")}
+          >
+            <Text style={[styles.langText, i18n.language === "en" && styles.langTextActive]}>{t("english")}</Text>
+          </Pressable>
+          <Pressable 
+            style={[styles.langBtn, i18n.language === "hi" && styles.langBtnActive]} 
+            onPress={() => changeLanguage("hi")}
+          >
+            <Text style={[styles.langText, i18n.language === "hi" && styles.langTextActive]}>{t("hindi")}</Text>
+          </Pressable>
+          <Pressable 
+            style={[styles.langBtn, i18n.language === "mr" && styles.langBtnActive]} 
+            onPress={() => changeLanguage("mr")}
+          >
+            <Text style={[styles.langText, i18n.language === "mr" && styles.langTextActive]}>{t("marathi")}</Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.sectionTitle}>{t("support")}</Text>
 
         <View style={styles.supportGrid}>
-          <Pressable style={styles.supportBtn} onPress={() => Linking.openURL("tel:9545351234")}>
+          <Pressable style={styles.supportBtn} onPress={() => Linking.openURL("tel:9209061234")}>
             <Ionicons name="call-outline" size={24} color={COLORS.primary} />
-            <Text style={styles.supportText}>Call</Text>
+            <Text style={styles.supportText}>{t("call")}</Text>
           </Pressable>
 
-          <Pressable style={styles.supportBtn} onPress={() => Linking.openURL("whatsapp://send?phone=+919545351234")}>
+          <Pressable style={styles.supportBtn} onPress={() => Linking.openURL("whatsapp://send?phone=+919209061234")}>
             <Ionicons name="logo-whatsapp" size={24} color={COLORS.primary} />
-            <Text style={styles.supportText}>WhatsApp</Text>
+            <Text style={styles.supportText}>{t("whatsapp")}</Text>
           </Pressable>
 
-          <Pressable style={styles.supportBtn} onPress={() => Linking.openURL("mailto:support@onlinegologistics.in")}>
+          <Pressable style={styles.supportBtn} onPress={() => Linking.openURL("mailto:onlinegologistics@gmail.com")}>
             <Ionicons name="mail-outline" size={24} color={COLORS.primary} />
-            <Text style={styles.supportText}>Email</Text>
+            <Text style={styles.supportText}>{t("email")}</Text>
           </Pressable>
 
           <Pressable style={styles.supportBtn} onPress={() => router.push("/drawer/faq" as any)}>
             <Ionicons name="help-circle-outline" size={24} color={COLORS.primary} />
-            <Text style={styles.supportText}>FAQ</Text>
+            <Text style={styles.supportText}>{t("faq")}</Text>
           </Pressable>
 
           <Pressable style={styles.supportBtn} onPress={() => router.push("/drawer/enquiries" as any)}>
             <Ionicons name="chatbubble-ellipses-outline" size={24} color={COLORS.primary} />
-            <Text style={styles.supportText}>Send Enquiry</Text>
+            <Text style={styles.supportText}>{t("send_enquiry")}</Text>
           </Pressable>
 
           <Pressable style={styles.supportBtn} onPress={() => router.push("/drawer/complaints" as any)}>
             <Ionicons name="alert-circle-outline" size={24} color={COLORS.primary} />
-            <Text style={styles.supportText}>Send Complaint</Text>
+            <Text style={styles.supportText}>{t("send_complaint")}</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -368,7 +397,7 @@ const styles = StyleSheet.create({
   },
 
   menuTitle: {
-    fontSize: 18,
+    fontSize: 38,
     fontWeight: "900",
     color: COLORS.textPrimary,
   },
@@ -417,5 +446,38 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "900",
     color: COLORS.textPrimary,
+  },
+
+  languageContainer: {
+    flexDirection: "row",
+    backgroundColor: COLORS.card,
+    borderRadius: 24,
+    padding: 6,
+    justifyContent: "space-between",
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.7)",
+    ...clayShadow,
+  },
+
+  langBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderRadius: 18,
+  },
+
+  langBtnActive: {
+    backgroundColor: COLORS.primary,
+  },
+
+  langText: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: COLORS.textPrimary,
+  },
+
+  langTextActive: {
+    color: COLORS.white,
   },
 });

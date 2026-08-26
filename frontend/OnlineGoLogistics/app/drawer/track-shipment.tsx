@@ -23,6 +23,7 @@ import {
 } from "../../src/services/logisticsApi";
 import { DARK_GLASS_THEME } from "../../constants/theme";
 import Toast from 'react-native-toast-message';
+import { useTranslation } from "react-i18next";
 
 const PROGRESS_STEPS = [
   "Created",
@@ -45,6 +46,7 @@ const STEP_ICONS = {
 };
 
 export default function TrackShipmentScreen() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ id?: string }>();
   const [trackingInput, setTrackingInput] = useState(params.id || "");
   const [loading, setLoading] = useState(false);
@@ -131,8 +133,8 @@ export default function TrackShipmentScreen() {
         <Pressable style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color={DARK_GLASS_THEME.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Track Shipment</Text>
-        <Pressable style={styles.headerIcon} onPress={() => Linking.openURL("mailto:support@onlinegologistics.in")}>
+        <Text style={styles.headerTitle}>{t("track_shipment")}</Text>
+        <Pressable style={styles.headerIcon} onPress={() => Linking.openURL("mailto:onlinegologistics@gmail.com")}>
           <Ionicons name="help-circle-outline" size={22} color={DARK_GLASS_THEME.textPrimary} />
         </Pressable>
       </View>
@@ -150,7 +152,7 @@ export default function TrackShipmentScreen() {
         >
           {/* SEARCH CARD */}
           <View style={styles.searchCard}>
-            <Text style={styles.searchLabel}>Enter Tracking ID / Waybill</Text>
+            <Text style={styles.searchLabel}>{t("enter_tracking_booking_id")}</Text>
             <View style={styles.searchInputRow}>
               <Ionicons name="search-outline" size={20} color="#94A3B8" style={styles.searchIcon} />
               <TextInput
@@ -183,7 +185,7 @@ export default function TrackShipmentScreen() {
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
                   <>
-                    <Text style={styles.trackButtonText}>Track Now</Text>
+                    <Text style={styles.trackButtonText}>{t("track_now")}</Text>
                     <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
                   </>
                 )}
@@ -195,9 +197,9 @@ export default function TrackShipmentScreen() {
           {!searched && !loading && (
             <View style={styles.emptyStateContainer}>
               <Ionicons name="navigate-circle-outline" size={80} color="rgba(255,255,255,0.06)" />
-              <Text style={styles.emptyStateTitle}>Ready to Track</Text>
+              <Text style={styles.emptyStateTitle}>{t("ready_to_track")}</Text>
               <Text style={styles.emptyStateText}>
-                Enter your shipment's unique Tracking ID above to see real-time status and delivery progress.
+                {t("ready_to_track_description")}
               </Text>
             </View>
           )}
@@ -205,12 +207,12 @@ export default function TrackShipmentScreen() {
           {searched && !loading && !shipment && (
             <View style={styles.errorStateContainer}>
               <Ionicons name="alert-circle-outline" size={80} color="#EF4444" />
-              <Text style={styles.emptyStateTitle}>No Shipment Found</Text>
+              <Text style={styles.emptyStateTitle}>{t("no_shipment_found")}</Text>
               <Text style={styles.emptyStateText}>
-                We couldn't find any shipment matching ID "{trackingInput}". Please check the spelling and try again.
+                {t("no_shipment_found_description")}
               </Text>
               <Pressable style={styles.retryButton} onPress={() => handleTrack()}>
-                <Text style={styles.retryText}>Retry Search</Text>
+                <Text style={styles.retryText}>{t("retry_search")}</Text>
               </Pressable>
             </View>
           )}
@@ -221,7 +223,7 @@ export default function TrackShipmentScreen() {
               <View style={styles.progressCard}>
                 <View style={styles.progressHeader}>
                   <View>
-                    <Text style={styles.progressTitle}>Tracking ID</Text>
+                    <Text style={styles.progressTitle}>{t("tracking_id")}</Text>
                     <Text style={styles.trackingIdVal}>{shipment.trackingId}</Text>
                   </View>
                   <View
@@ -269,7 +271,7 @@ export default function TrackShipmentScreen() {
                           </View>
                         </View>
                         <Text style={[styles.stepLabel, isPassed && styles.activeStepLabel]} numberOfLines={1}>
-                          {step}
+                          {t(step.toLowerCase().replace(/ /g, "_"))}
                         </Text>
                       </View>
                     );
@@ -284,7 +286,7 @@ export default function TrackShipmentScreen() {
                     <Ionicons name="location" size={20} color={DARK_GLASS_THEME.electricBlue} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.locationTitle}>Current Location</Text>
+                    <Text style={styles.locationTitle}>{t("current_location")}</Text>
                     <Text style={styles.locationBranch}>
                       {shipment.currentBranch || "Central Sorting Office"}
                     </Text>
@@ -302,39 +304,39 @@ export default function TrackShipmentScreen() {
                       )
                     }
                   >
-                    <Text style={styles.mapButtonText}>View on Map</Text>
+                    <Text style={styles.mapButtonText}>{t("view_on_map")}</Text>
                   </Pressable>
                 </View>
               </View>
 
               {/* SHIPMENT SUMMARY */}
               <View style={styles.summaryCard}>
-                <Text style={styles.summaryTitle}>Shipment Details</Text>
+                <Text style={styles.summaryTitle}>{t("new_shipment")}</Text>
                 <View style={styles.divider} />
 
                 <View style={styles.detailsGrid}>
-                  <DetailRow label="Customer Name" value={shipment.customerName} />
-                  <DetailRow label="Mobile Number" value={shipment.mobileNumber} />
-                  <DetailRow label="Pickup City" value={shipment.pickupCity} />
-                  <DetailRow label="Delivery City" value={shipment.deliveryCity} />
-                  <DetailRow label="Pickup Address" value={shipment.pickupAddress} fullWidth />
-                  <DetailRow label="Delivery Address" value={shipment.deliveryAddress} fullWidth />
-                  <DetailRow label="Parcel Type" value={shipment.parcelType} />
-                  <DetailRow label="Package Description" value={shipment.packageDescription} />
-                  <DetailRow label="Weight" value={`${shipment.weight} kg`} />
-                  <DetailRow label="Quantity" value={`${shipment.quantity} pcs`} />
-                  <DetailRow label="Transport Type" value={shipment.transportType} />
-                  <DetailRow label="Expected Delivery" value={shipment.estimatedDeliveryDate} />
+                  <DetailRow label={t("customer_name")} value={shipment.customerName} />
+                  <DetailRow label={t("mobile_number")} value={shipment.mobileNumber} />
+                  <DetailRow label={t("pickup_city")} value={shipment.pickupCity} />
+                  <DetailRow label={t("delivery_city")} value={shipment.deliveryCity} />
+                  <DetailRow label={t("pickup_address_business_address")} value={shipment.pickupAddress} fullWidth />
+                  <DetailRow label={t("delivery_address")} value={shipment.deliveryAddress} fullWidth />
+                  <DetailRow label={t("parcel_type")} value={shipment.parcelType} />
+                  <DetailRow label={t("package_description")} value={shipment.packageDescription} />
+                  <DetailRow label={t("weight")} value={`${shipment.weight} kg`} />
+                  <DetailRow label={t("quantity")} value={`${shipment.quantity} pcs`} />
+                  <DetailRow label={t("transport_type")} value={shipment.transportType} />
+                  <DetailRow label={t("expected_delivery")} value={shipment.estimatedDeliveryDate} />
                 </View>
               </View>
 
               {/* TRACKING TIMELINE */}
               <View style={styles.timelineCard}>
-                <Text style={styles.timelineTitle}>Tracking History</Text>
+                <Text style={styles.timelineTitle}>{t("tracking_history")}</Text>
                 <View style={styles.divider} />
 
                 {shipment.trackingHistory.length === 0 ? (
-                  <Text style={styles.emptyTimelineText}>Tracking updates not available yet.</Text>
+                  <Text style={styles.emptyTimelineText}>{t("tracking_updates_unavailable")}</Text>
                 ) : (
                   shipment.trackingHistory.map((item, index) => {
                     const isLast = index === shipment.trackingHistory.length - 1;
@@ -366,17 +368,17 @@ export default function TrackShipmentScreen() {
                             <Text style={styles.timelineTime}>{item.dateTime}</Text>
                           </View>
                           <Text style={styles.timelineBranch}>
-                            <Ionicons name="business-outline" size={12} color="#94A3B8" /> Branch:{" "}
+                            <Ionicons name="business-outline" size={12} color="#94A3B8" /> {t("branch")}:{" "}
                             {item.branchName || "N/A"}
                           </Text>
                           <Text style={styles.timelineBranch}>
-                            <Ionicons name="location-outline" size={12} color="#94A3B8" /> Location:{" "}
+                            <Ionicons name="location-outline" size={12} color="#94A3B8" /> {t("location")}:{" "}
                             {item.location || "N/A"}
                           </Text>
                           {item.remark && (
                             <Text style={styles.timelineRemark}>"{item.remark}"</Text>
                           )}
-                          <Text style={styles.timelineUpdatedBy}>Updated by: {item.updatedBy}</Text>
+                          <Text style={styles.timelineUpdatedBy}>{t("updated_by")}: {item.updatedBy}</Text>
                         </View>
                       </View>
                     );

@@ -24,9 +24,12 @@ import {
 import { saveUserSession } from "../utils/session";
 import { DARK_GLASS_THEME } from "../constants/theme";
 import Toast from 'react-native-toast-message';
+import { useTranslation } from "react-i18next";
 
 export default function Register() {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
+  const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
   const [alternateMobile, setAlternateMobile] = useState("");
@@ -71,21 +74,22 @@ export default function Register() {
         mobileNumber: mobile.trim(),
         password,
         address: address.trim(),
+        company: company.trim(),
       };
-      
+
       const res = await registerMobileApi(payload);
-      
+
       Toast.show({ type: 'success', text1: "Registered!", text2: "Account created successfully." });
-      
+
       // Auto-login since OTP is bypassed
       if (res && res.user) {
-         // Fake a token if it's not provided, but usually we should login
-         // The registerMobileUser controller does not return a token. We can just redirect to login
-         setTimeout(() => {
-           router.replace("/login");
-         }, 1500);
+        // Fake a token if it's not provided, but usually we should login
+        // The registerMobileUser controller does not return a token. We can just redirect to login
+        setTimeout(() => {
+          router.replace("/login");
+        }, 1500);
       }
-      
+
     } catch (error: any) {
       Toast.show({ type: 'error', text1: "Registration Failed", text2: error?.response?.data?.message || "Could not register" });
     } finally {
@@ -144,7 +148,7 @@ export default function Register() {
               resizeMode="cover"
             />
           </View>
-          <Text style={styles.waveTitle}>Create Account</Text>
+          <Text style={styles.waveTitle}>{t("create_account")}</Text>
         </LinearGradient>
         <View style={styles.waveDivider} />
       </View>
@@ -154,14 +158,15 @@ export default function Register() {
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <Text style={styles.subtitle}>Register with Gmail OTP verification</Text>
+          <Text style={styles.subtitle}>{t("register_subtitle")}</Text>
 
-          <Input label="Full Name" value={name} onChangeText={setName} icon="person-outline" editable={!otpSent} />
-          
+          <Input label={t("full_name")} value={name} onChangeText={setName} icon="person-outline" editable={!otpSent} />
+          <Input label={t("company_name")} value={company} onChangeText={setCompany} icon="business-outline" editable={!otpSent} />
+
           {/* Email with Gmail OTP */}
           <View style={[styles.inputBox, otpSent && { borderColor: '#22C55E' }]}>
             <TextInput
-              placeholder="Email Address"
+              placeholder={t("email_address")}
               style={styles.input}
               placeholderTextColor="#94A3B8"
               value={email}
@@ -177,15 +182,15 @@ export default function Register() {
           {otpSent && (
             <View style={styles.verifyBadge}>
               <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
-              <Text style={styles.verifyText}>OTP sent to {email}</Text>
+              <Text style={styles.verifyText}>{t("otp_sent_to")}{email}</Text>
               <TouchableOpacity onPress={() => { setOtpSent(false); setOtp(""); }}>
-                <Text style={styles.changeText}>  Change</Text>
+                <Text style={styles.changeText}>  {t("change_btn")}</Text>
               </TouchableOpacity>
             </View>
           )}
 
           <Input
-            label="Mobile Number (10 digits)"
+            label={t("mobile_number_10_digits")}
             value={mobile}
             onChangeText={setMobile}
             icon="call-outline"
@@ -195,11 +200,11 @@ export default function Register() {
 
           {!showAlternate ? (
             <Pressable onPress={() => setShowAlternate(true)} style={styles.addAltBtn} disabled={otpSent}>
-              <Text style={styles.addAltText}>+ Add Alternate No</Text>
+              <Text style={styles.addAltText}>{t("add_alternate_no")}</Text>
             </Pressable>
           ) : (
             <Input
-              label="Alternate Mobile Number"
+              label={t("alternate_mobile_number")}
               value={alternateMobile}
               onChangeText={setAlternateMobile}
               icon="call-outline"
@@ -209,7 +214,7 @@ export default function Register() {
           )}
 
           <Input
-            label="Password"
+            label={t("password_label")}
             value={password}
             onChangeText={setPassword}
             icon="key-outline"
@@ -217,7 +222,7 @@ export default function Register() {
             editable={!otpSent}
           />
           <Input
-            label="Address"
+            label={t("address_label")}
             value={address}
             onChangeText={setAddress}
             icon="home-outline"
@@ -228,7 +233,7 @@ export default function Register() {
           {otpSent && (
             <View style={[styles.inputBox, { borderColor: DARK_GLASS_THEME.electricBlue }]}>
               <TextInput
-                placeholder="Enter OTP from Gmail"
+                placeholder={t("enter_otp_gmail")}
                 style={styles.input}
                 placeholderTextColor="#94A3B8"
                 value={otp}
@@ -255,14 +260,14 @@ export default function Register() {
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={styles.primaryText}>
-                  {otpSent ? "✓ VERIFY OTP & REGISTER" : "CREATE ACCOUNT"}
+                  {otpSent ? t("verify_otp_register") : t("create_account_btn")}
                 </Text>
               )}
             </LinearGradient>
           </Pressable>
 
           <Pressable onPress={() => router.replace("/login")} style={styles.linkButton}>
-            <Text style={styles.linkText}>Already registered? Login</Text>
+            <Text style={styles.linkText}>{t("already_registered_login")}</Text>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>

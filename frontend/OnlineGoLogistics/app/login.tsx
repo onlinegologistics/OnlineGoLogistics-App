@@ -17,21 +17,34 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   ScrollView,
-  Platform
+  Platform,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { DARK_GLASS_THEME } from '../constants/theme';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 const { height } = Dimensions.get('window');
 
 export default function Login() {
+  const { t, i18n } = useTranslation();
+  const [langModalVisible, setLangModalVisible] = useState(false);
+
+  const changeLanguage = async (lang: string) => {
+    await i18n.changeLanguage(lang);
+    await AsyncStorage.setItem("user-language", lang);
+    setLangModalVisible(false);
+  };
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [alertModal, setAlertModal] = useState<{ visible: boolean; title: string; message: string; type: 'info' | 'success' | 'error' }>({ visible: false, title: '', message: '', type: 'info' });
 
   useEffect(() => {
     const loadSavedCredentials = async () => {
@@ -141,25 +154,31 @@ export default function Login() {
   const handleForgotPassword = async () => {
     const emailInput = username.trim();
     if (!emailInput) {
-      Alert.alert(
-        "Forgot Password?",
-        "Please enter your Email ID in the input box above first, then click Forgot Password to receive a reset link."
-      );
+      setAlertModal({
+        visible: true,
+        title: t("forgot_password_title"),
+        message: t("forgot_password_empty_msg"),
+        type: 'info'
+      });
       return;
     }
 
     try {
       setLoading(true);
       await forgotPasswordApi(emailInput);
-      Alert.alert(
-        "Reset Link Sent",
-        "A password reset link has been sent to your registered email address. Please check your inbox (and spam folder) to reset your password."
-      );
+      setAlertModal({
+        visible: true,
+        title: t("reset_link_sent_title"),
+        message: t("reset_link_sent_msg"),
+        type: 'success'
+      });
     } catch (error: any) {
-      Alert.alert(
-        "Reset Failed",
-        error?.response?.data?.message || "Could not send password reset link. Please check the email address."
-      );
+      setAlertModal({
+        visible: true,
+        title: t("reset_failed_title"),
+        message: error?.response?.data?.message || t("reset_failed_default_msg"),
+        type: 'error'
+      });
     } finally {
       setLoading(false);
     }
@@ -170,6 +189,98 @@ export default function Login() {
       colors={[DARK_GLASS_THEME.bgNavy, DARK_GLASS_THEME.bgDarkBlue]}
       style={styles.container}
     >
+      {/* LANGUAGE PICKER MODAL */}
+      <Modal
+        visible={langModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setLangModalVisible(false)}
+      >
+        <Pressable style={styles.langOverlay} onPress={() => setLangModalVisible(false)}>
+          <Pressable style={styles.langSheet} onPress={() => {}}>
+            <View style={styles.langSheetHandle} />
+            <View style={styles.langSheetHeader}>
+              <Ionicons name="language-outline" size={32} color={DARK_GLASS_THEME.electricBlue} />
+              <Text style={styles.langSheetTitle}>{t("choose_language")}</Text>
+              <Text style={styles.langSheetSubtitle}>{t("choose_language_subtitle")}</Text>
+            </View>
+            {[
+              { code: "en", label: "English", native: "English", flag: "🇬🇧" },
+              { code: "hi", label: "Hindi", native: "हिंदी", flag: "🇮🇳" },
+              { code: "mr", label: "Marathi", native: "मराठी", flag: "🟠" },
+            ].map((lang) => (
+              <Pressable
+                key={lang.code}
+                style={[
+                  styles.langOption,
+                  i18n.language === lang.code && styles.langOptionActive,
+                ]}
+                onPress={() => changeLanguage(lang.code)}
+              >
+                <Text style={styles.langFlag}>{lang.flag}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.langOptionLabel, i18n.language === lang.code && styles.langOptionLabelActive]}>
+                    {lang.native}
+                  </Text>
+                  <Text style={styles.langOptionSub}>{lang.label}</Text>
+                </View>
+                {i18n.language === lang.code && (
+                  <Ionicons name="checkmark-circle" size={22} color={DARK_GLASS_THEME.electricBlue} />
+                )}
+              </Pressable>
+            ))}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* CUSTOM ALERT MODAL */}
+      <Modal
+        visible={alertModal.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAlertModal(prev => ({ ...prev, visible: false }))}
+      >
+        <View style={styles.alertOverlay}>
+          <View style={styles.alertBox}>
+            <View style={[styles.alertIconContainer, 
+              alertModal.type === 'success' ? { backgroundColor: 'rgba(34, 197, 94, 0.15)' } : 
+              alertModal.type === 'error' ? { backgroundColor: 'rgba(239, 68, 68, 0.15)' } : 
+              { backgroundColor: 'rgba(79, 124, 255, 0.15)' }
+            ]}>
+              <Ionicons 
+                name={
+                  alertModal.type === 'success' ? 'checkmark-circle' :
+                  alertModal.type === 'error' ? 'close-circle' : 'information-circle'
+                } 
+                size={40} 
+                color={
+                  alertModal.type === 'success' ? '#22C55E' :
+                  alertModal.type === 'error' ? '#EF4444' : DARK_GLASS_THEME.electricBlue
+                } 
+              />
+            </View>
+            <Text style={styles.alertTitle}>{alertModal.title}</Text>
+            <Text style={styles.alertMessage}>{alertModal.message}</Text>
+            <TouchableOpacity 
+              style={styles.alertButton}
+              onPress={() => setAlertModal(prev => ({ ...prev, visible: false }))}
+            >
+              <LinearGradient
+                colors={[DARK_GLASS_THEME.electricBlue, DARK_GLASS_THEME.purple]}
+                style={styles.alertButtonGrad}
+              >
+                <Text style={styles.alertButtonText}>{t("OK") || "OK"}</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* FLOATING LANGUAGE BUTTON */}
+      <Pressable style={styles.floatingLangBtn} onPress={() => setLangModalVisible(true)}>
+        <Ionicons name="language-outline" size={16} color="#FFFFFF" />
+        <Text style={styles.floatingLangText}>Language / भाषा</Text>
+      </Pressable>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -196,14 +307,14 @@ export default function Login() {
               resizeMode="cover"
             />
           </View>
-          <Text style={styles.waveTitle}>Hello again!</Text>
+          <Text style={styles.waveTitle}>{t("hello_again")}</Text>
         </LinearGradient>
         <View style={styles.waveDivider} />
       </View>
 
       {/* MAIN CONTENT */}
       <View style={styles.content}>
-        <Text style={styles.subtitle}>Log in to your account to continue.</Text>
+        <Text style={styles.subtitle}>{t("login_subtitle")}</Text>
         
         {/* Login Mode Switch */}
         <View style={styles.modeRow}>
@@ -212,7 +323,7 @@ export default function Login() {
             onPress={() => { setLoginMode("password"); setOtpSent(false); }}
           >
             <Text style={[styles.modeText, loginMode === "password" && styles.activeModeText]}>
-              Password
+              {t("password")}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -220,7 +331,7 @@ export default function Login() {
             onPress={() => { setLoginMode("otp"); setOtpSent(false); }}
           >
             <Text style={[styles.modeText, loginMode === "otp" && styles.activeModeText]}>
-              OTP
+              {t("otp")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -228,7 +339,7 @@ export default function Login() {
         {/* Username/Email/Mobile input */}
         <View style={styles.inputBox}>
           <TextInput
-            placeholder={loginMode === "otp" ? "Mail OTP" : "Email ID"}
+            placeholder={loginMode === "otp" ? t("mail_otp") : t("email_id")}
             placeholderTextColor="#94A3B8"
             style={styles.input}
             value={username}
@@ -244,7 +355,7 @@ export default function Login() {
             {/* Password */}
             <View style={styles.inputBox}>
               <TextInput
-                placeholder="Password"
+                placeholder={t("password_label")}
                 placeholderTextColor="#94A3B8"
                 secureTextEntry
                 style={styles.input}
@@ -267,12 +378,12 @@ export default function Login() {
                   color={rememberMe ? DARK_GLASS_THEME.cyan : DARK_GLASS_THEME.textSecondary} 
                 />
                 <Text style={[styles.remember, rememberMe && { color: DARK_GLASS_THEME.textPrimary }]}>
-                  Remember Me
+                  {t("remember_me")}
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity onPress={handleForgotPassword}>
-                <Text style={styles.forgot}>Forgot Password?</Text>
+                <Text style={styles.forgot}>{t("forgot_password")}</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -292,18 +403,18 @@ export default function Login() {
                   {loading ? (
                     <ActivityIndicator color="#fff" size="small" />
                   ) : (
-                    <Text style={styles.sendOtpText}>Send OTP via Mail</Text>
+                    <Text style={styles.sendOtpText}>{t("send_otp_mail")}</Text>
                   )}
                 </LinearGradient>
               </TouchableOpacity>
             )}
-
+ 
             {/* OTP Input */}
             {otpSent && (
               <>
                 <View style={[styles.inputBox, { borderColor: DARK_GLASS_THEME.electricBlue }]}>
                   <TextInput
-                    placeholder="Enter OTP"
+                    placeholder={t("enter_otp")}
                     placeholderTextColor="#94A3B8"
                     style={styles.input}
                     value={otp}
@@ -317,7 +428,7 @@ export default function Login() {
                   style={styles.resendBtn}
                   onPress={() => { setOtpSent(false); setOtp(""); }}
                 >
-                  <Text style={styles.resendText}>← Change Details / Resend OTP</Text>
+                  <Text style={styles.resendText}>{t("change_details_resend_otp")}</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -355,7 +466,7 @@ export default function Login() {
           style={styles.registerLink}
           onPress={() => router.replace("/register")}
         >
-          <Text style={styles.registerText}>New user? Create account</Text>
+          <Text style={styles.registerText}>{t("new_user_create_account")}</Text>
         </TouchableOpacity>
       </View>
 
@@ -601,5 +712,165 @@ const styles = StyleSheet.create({
     color: DARK_GLASS_THEME.cyan,
     fontWeight: "700",
     fontSize: 14,
+  },
+
+  // Language Picker
+  floatingLangBtn: {
+    position: "absolute",
+    top: 52,
+    right: 16,
+    zIndex: 100,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(79,124,255,0.88)",
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    shadowColor: DARK_GLASS_THEME.electricBlue,
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  floatingLangText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
+  langOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+  },
+  langSheet: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 20,
+    paddingBottom: 44,
+    paddingTop: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+  langSheetHandle: {
+    width: 44,
+    height: 5,
+    backgroundColor: "#E2E8F0",
+    borderRadius: 3,
+    alignSelf: "center",
+    marginBottom: 22,
+  },
+  langSheetHeader: {
+    alignItems: "center",
+    marginBottom: 26,
+    gap: 6,
+  },
+  langSheetTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#1E293B",
+    marginTop: 8,
+    letterSpacing: 0.2,
+  },
+  langSheetSubtitle: {
+    fontSize: 13,
+    color: "#64748B",
+    textAlign: "center",
+  },
+  langOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingVertical: 15,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    marginBottom: 10,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1.5,
+    borderColor: "#E2E8F0",
+  },
+  langOptionActive: {
+    backgroundColor: "#EEF2FF",
+    borderColor: DARK_GLASS_THEME.electricBlue,
+  },
+  langFlag: {
+    fontSize: 30,
+  },
+  langOptionLabel: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1E293B",
+  },
+  langOptionLabelActive: {
+    color: DARK_GLASS_THEME.electricBlue,
+  },
+  langOptionSub: {
+    fontSize: 12,
+    color: "#94A3B8",
+    marginTop: 2,
+    fontWeight: "500",
+  },
+  
+  /* Custom Alert Modal */
+  alertOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(11, 21, 40, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  alertBox: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: DARK_GLASS_THEME.electricBlue,
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 15,
+  },
+  alertIconContainer: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  alertTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 10,
+    textAlign: 'center',
+    letterSpacing: 0.3,
+  },
+  alertMessage: {
+    fontSize: 15,
+    color: '#64748B',
+    textAlign: 'center',
+    marginBottom: 28,
+    lineHeight: 22,
+  },
+  alertButton: {
+    width: '100%',
+    height: 52,
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  alertButtonGrad: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  alertButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });

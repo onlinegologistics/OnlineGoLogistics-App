@@ -36,6 +36,8 @@ const profileResponse = (user) => ({
     username: user.username,
     email: user.email,
     mobile: user.mobile,
+    alternateMobile: user.alternateMobile || "",
+    whatsappMobile: user.whatsappMobile || "",
     address: user.address,
     company: user.company,
     role: user.role,
@@ -52,6 +54,8 @@ const buildMobileUserDataDoc = (user) => ({
     username: user.username,
     email: user.email,
     mobile: user.mobile,
+    alternateMobile: user.alternateMobile,
+    whatsappMobile: user.whatsappMobile,
     address: user.address,
     company: user.company,
     role: user.role,
@@ -78,6 +82,8 @@ const mergedProfileResponse = async (user) => {
         username: mobileData?.username || user.username,
         email: mobileData?.email || user.email,
         mobile: mobileData?.mobile || user.mobile,
+        alternateMobile: mobileData?.alternateMobile || user.alternateMobile || "",
+        whatsappMobile: mobileData?.whatsappMobile || user.whatsappMobile || "",
         address: mobileData?.address || user.address,
         pickupAddress: mobileData?.pickupAddress || user.pickupAddress || mobileData?.address || user.address,
         company: mobileData?.company || user.company,
@@ -692,6 +698,8 @@ const updateProfile = async (req, res) => {
             user.email = email;
         }
         if (req.body.mobile !== undefined) user.mobile = req.body.mobile;
+        if (req.body.alternateMobile !== undefined) user.alternateMobile = req.body.alternateMobile;
+        if (req.body.whatsappMobile !== undefined) user.whatsappMobile = req.body.whatsappMobile;
         if (req.body.address !== undefined) user.address = req.body.address;
         if (req.body.company !== undefined) user.company = req.body.company;
         if (req.body.profilePhoto !== undefined) user.profilePhoto = req.body.profilePhoto;
@@ -898,7 +906,7 @@ const firebaseLogin = async (req, res) => {
 
 const registerMobileUser = async (req, res) => {
   try {
-    const { name, email, mobileNumber, password, address, firebaseUid } = req.body;
+    const { name, email, mobileNumber, password, address, firebaseUid, company } = req.body;
     console.log("[REGISTER MOBILE] API body:", req.body);
 
     const normalizedEmail = email ? email.toLowerCase().trim() : undefined;
@@ -924,6 +932,7 @@ const registerMobileUser = async (req, res) => {
       mobileNumber: cleanMobile,
       address: cleanAddress,
       pickupAddress: cleanAddress,
+      company: company ? company.trim() : undefined,
       password,
       firebaseUid,
       role: "mobile",
@@ -987,8 +996,8 @@ const forgotPassword = async (req, res) => {
         const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
         const resetLink = `${protocol}://${req.get('host')}/api/auth/reset-password?token=${token}`;
 
-        // 5. Send email
-        await transporter.sendMail({
+        // 5. Send email (in the background, no await so it doesn't block response)
+        transporter.sendMail({
             from: `"Online Go Logistics" <${process.env.EMAIL_USER}>`,
             to: user.email,
             subject: 'Reset Password - Online Go Logistics',
@@ -1002,7 +1011,7 @@ const forgotPassword = async (req, res) => {
                     <p style="color: #64748b; font-size: 14px; line-height: 1.5; border-top: 1px solid #f1f5f9; padding-top: 20px; margin-bottom: 0;">If you did not request a password reset, please ignore this email. This link will expire in <strong>15 minutes</strong>.</p>
                 </div>
             `,
-        });
+        }).catch(err => console.error('[BACKGROUND EMAIL ERROR]', err.message));
 
         res.status(200).json({ message: 'Password reset link has been sent to your registered email' });
     } catch (error) {
@@ -1225,7 +1234,7 @@ const handleResetPassword = async (req, res) => {
             <body>
                 <div class="card">
                     <h2>Success!</h2>
-                    <p>Your password has been reset successfully. You can now close this tab and log in using your new password in the app.</p>
+                    <p>Your password has been reset successfully.<br><br>Please go back to the app and login with your new password.</p>
                 </div>
             </body>
             </html>

@@ -14,6 +14,7 @@ import {
   ParcelRequestResponse,
 } from "../../api/booking";
 import { DARK_GLASS_THEME } from "../../constants/theme";
+import { useTranslation } from "react-i18next";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -30,6 +31,7 @@ const getStatusColor = (status: string) => {
 };
 
 export default function BookingDetails() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [booking, setBooking] = useState<ParcelRequestResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,9 +72,9 @@ export default function BookingDetails() {
           <Ionicons name="document-text-outline" size={26} color="#FFFFFF" />
         </LinearGradient>
         <View>
-          <Text style={styles.headerKicker}>Shipment</Text>
-          <Text style={styles.headerTitle}>Booking Details</Text>
-          <Text style={styles.headerSubtitle}>Complete status and parcel information.</Text>
+          <Text style={styles.headerKicker}>{t("shipments")}</Text>
+          <Text style={styles.headerTitle}>{t("booking_details")}</Text>
+          <Text style={styles.headerSubtitle}>{t("complete_parcel_info")}</Text>
         </View>
       </LinearGradient>
 
@@ -85,43 +87,43 @@ export default function BookingDetails() {
           <View style={styles.card}>
             {/* STATUS */}
             <Detail
-              label="Status"
+              label={t("status")}
               value={booking.status}
               color={getStatusColor(booking.status)}
             />
 
             {/* ADDRESSES */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Addresses</Text>
-              <Detail label="Pickup Address" value={booking.pickupAddress} />
-              <Detail label="Delivery Address" value={booking.deliveryAddress} />
+              <Text style={styles.sectionTitle}>{t("addresses_label")}</Text>
+              <Detail label={t("pickup_address_business_address")} value={booking.pickupAddress} />
+              <Detail label={t("delivery_address")} value={booking.deliveryAddress} />
             </View>
 
             {/* PACKAGE DETAILS */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Package Details</Text>
-              <Detail label="Description" value={booking.packageDescription || "N/A"} />
-              <Detail label="Weight" value={`${booking.weight || 0} kg`} />
-              <Detail label="Quantity" value={`${booking.quantity || 1}`} />
+              <Text style={styles.sectionTitle}>{t("package_details")}</Text>
+              <Detail label={t("package_description")} value={booking.packageDescription || "N/A"} />
+              <Detail label={t("weight")} value={`${booking.weight || 0} kg`} />
+              <Detail label={t("quantity")} value={`${booking.quantity || 1}`} />
             </View>
 
             {/* REMARKS */}
             {booking.remarks && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Remarks</Text>
+                <Text style={styles.sectionTitle}>{t("remarks")}</Text>
                 <Text style={styles.value}>{booking.remarks}</Text>
               </View>
             )}
 
             {/* DATES */}
             <Detail
-              label="Created On"
+              label={t("created_on")}
               value={new Date(booking.createdAt).toLocaleString("en-IN")}
             />
 
             {booking.status !== "Pending" && (
               <Detail
-                label="Last Updated"
+                label={t("last_updated")}
                 value={new Date(booking.updatedAt).toLocaleString("en-IN")}
               />
             )}

@@ -2,7 +2,7 @@
   "expo": {
     "name": "OnlineGoLogistics",
     "slug": "OnlineGoLogistics",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "onlinegologistics",
@@ -16,7 +16,7 @@
       "permissions": [
         "INTERNET"
       ],
-      "versionCode": 5,
+      "versionCode": 6,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -38,8 +38,6 @@
     },
     "plugins": [
       "expo-router",
-      "@react-native-firebase/app",
-      "@react-native-firebase/auth",
       [
         "expo-splash-screen",
         {

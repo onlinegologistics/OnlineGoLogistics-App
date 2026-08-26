@@ -16,6 +16,8 @@ const userSchema = mongoose.Schema({
     },
     email: { type: String },
     mobile: { type: String },
+    alternateMobile: { type: String },
+    whatsappMobile: { type: String },
     address: { type: String },
     company: { type: String },
     isActive: { type: Boolean, default: true },
