@@ -59,11 +59,8 @@
     "extra": {
       "APP_VARIANT": "preview",
       "router": {},
-      "API_URL": "https://app.onlinegologistics.in",
-      "eas": {
-        "projectId": "820643c5-1927-4235-9f9e-846974801397"
-      }
+      "API_URL": "https://app.onlinegologistics.in"
     },
-    "owner": "worknai-onlinegologistics"
+    "owner": "worknailearninghub"
   }
 }

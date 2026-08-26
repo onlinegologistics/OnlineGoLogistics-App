@@ -26,6 +26,7 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           source: "backend/**,!backend/node_modules/**"
           target: ${{ secrets.VPS_TARGET_DIR }}
+          
           strip_components: 0
 
       # Execute remote commands to build and restart Docker container
