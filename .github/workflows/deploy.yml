@@ -1,4 +1,4 @@
-name: Deploy Backend to VPS
+﻿name: Deploy OnlineGoLogistics App Backend
 
 on:
   push:
@@ -7,41 +7,96 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: app-backend-deploy
+  cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Deploy files to VPS using SCP (excluding node_modules to speed up transfer)
-      - name: Copy backend files to VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT }}
-          source: "backend/**,!backend/node_modules/**"
-          target: ${{ secrets.VPS_TARGET_DIR }}
-          
-          strip_components: 0
+      - name: Validate Secrets
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER || secrets.VPS_USERNAME || 'root' }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          test -n "$VPS_HOST" || { echo "::error::VPS_HOST secret is missing"; exit 1; }
+          test -n "$VPS_USER" || { echo "::error::VPS_USER secret is missing"; exit 1; }
+          test -n "$VPS_SSH_KEY" || { echo "::error::VPS_SSH_KEY secret is missing"; exit 1; }
 
-      # Execute remote commands to build and restart Docker container
-      - name: Execute remote ssh commands to deploy
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Package Backend
+        run: |
+          tar \
+            --exclude='backend/node_modules' \
+            --exclude='backend/database' \
+            --exclude='backend/.env' \
+            -czf backend-release.tar.gz -C backend .
+
+      - name: Upload Backend to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER || secrets.VPS_USERNAME || 'root' }}
+          VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          ssh \
+            -i ~/.ssh/deploy_key \
+            -p "$VPS_PORT" \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            "$VPS_USER@$VPS_HOST" \
+            "mkdir -p /tmp/onlinego-app-deploy /var/www/onlinego_app/backend"
+
+          scp \
+            -i ~/.ssh/deploy_key \
+            -P "$VPS_PORT" \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            backend-release.tar.gz \
+            "$VPS_USER@$VPS_HOST:/tmp/onlinego-app-deploy/backend-release.tar.gz"
+
+      - name: Deploy on VPS
+        uses: appleboy/ssh-action@master
+        env:
+          APP_BACKEND_ENV: ${{ secrets.APP_BACKEND_ENV || secrets.BACKEND_ENV }}
         with:
           host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
+          username: ${{ secrets.VPS_USER || secrets.VPS_USERNAME || 'root' }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          timeout: 60s
+          command_timeout: 20m
+          envs: APP_BACKEND_ENV
           script: |
-            cd ${{ secrets.VPS_TARGET_DIR }}/backend
-            # Build and restart the docker container using compose
-            docker compose down || docker-compose down || true
-            docker compose up --build -d || docker-compose up --build -d
-            # Clean up old/dangling images to save disk space
+            set -e
+            echo "=== EXTRACTING APP BACKEND ==="
+            mkdir -p /var/www/onlinego_app/backend
+            tar -xzf /tmp/onlinego-app-deploy/backend-release.tar.gz -C /var/www/onlinego_app/backend
+            rm -f /tmp/onlinego-app-deploy/backend-release.tar.gz
+
+            cd /var/www/onlinego_app/backend
+
+            if [ -n "$APP_BACKEND_ENV" ]; then
+              echo "Writing backend/.env from secret"
+              printf '%s\n' "$APP_BACKEND_ENV" > .env
+              chmod 600 .env
+            fi
+
+            echo "=== STARTING DOCKER CONTAINER (PORT 5004) ==="
+            docker compose down --remove-orphans || true
+            docker compose up -d --build --force-recreate
             docker image prune -f
 
+            sleep 5
+            docker compose ps
+            echo "✅ OnlineGoLogistics App Backend deployed successfully!"

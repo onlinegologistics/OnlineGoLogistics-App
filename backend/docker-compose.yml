@@ -1,13 +1,19 @@
-version: '3.8'
+﻿version: '3.8'
 
 services:
   backend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: onlinego-backend
+    container_name: onlinego_app_backend
     restart: always
     ports:
-      - "${PORT:-5001}:${PORT:-5001}"
+      - "5004:5001"
     env_file:
       - .env
+    networks:
+      - onlinego_app_network
+
+networks:
+  onlinego_app_network:
+    driver: bridge
