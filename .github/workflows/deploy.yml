@@ -1,4 +1,4 @@
-﻿name: Deploy OnlineGoLogistics App Backend
+name: Deploy OnlineGoLogistics App Backend
 
 on:
   push:
@@ -80,23 +80,35 @@ jobs:
           script: |
             set -e
             echo "=== EXTRACTING APP BACKEND ==="
-            mkdir -p /var/www/onlinego_app/backend
-            tar -xzf /tmp/onlinego-app-deploy/backend-release.tar.gz -C /var/www/onlinego_app/backend
-            rm -f /tmp/onlinego-app-deploy/backend-release.tar.gz
+            mkdir -p /var/www/onlinego_app/backend /tmp/onlinego-app-deploy || sudo mkdir -p /var/www/onlinego_app/backend /tmp/onlinego-app-deploy
+            tar -xzf /tmp/onlinego-app-deploy/backend-release.tar.gz -C /var/www/onlinego_app/backend || sudo tar -xzf /tmp/onlinego-app-deploy/backend-release.tar.gz -C /var/www/onlinego_app/backend
+            rm -f /tmp/onlinego-app-deploy/backend-release.tar.gz || sudo rm -f /tmp/onlinego-app-deploy/backend-release.tar.gz
 
             cd /var/www/onlinego_app/backend
 
             if [ -n "$APP_BACKEND_ENV" ]; then
               echo "Writing backend/.env from secret"
-              printf '%s\n' "$APP_BACKEND_ENV" > .env
-              chmod 600 .env
+              printf '%s\n' "$APP_BACKEND_ENV" > .env || sudo bash -c "printf '%s\n' '$APP_BACKEND_ENV' > .env"
+              chmod 600 .env || sudo chmod 600 .env || true
             fi
 
             echo "=== STARTING DOCKER CONTAINER (PORT 5004) ==="
-            docker compose down --remove-orphans || true
-            docker compose up -d --build --force-recreate
-            docker image prune -f
+            if command -v docker-compose &> /dev/null; then
+              docker-compose down --remove-orphans || true
+              docker-compose up -d --build --force-recreate || docker-compose up -d --build
+            elif docker compose version &> /dev/null; then
+              docker compose down --remove-orphans || true
+              docker compose up -d --build --force-recreate || docker compose up -d --build
+            elif sudo docker compose version &> /dev/null; then
+              sudo docker compose down --remove-orphans || true
+              sudo docker compose up -d --build --force-recreate || sudo docker compose up -d --build
+            elif sudo docker-compose version &> /dev/null; then
+              sudo docker-compose down --remove-orphans || true
+              sudo docker-compose up -d --build --force-recreate || sudo docker-compose up -d --build
+            fi
+
+            docker image prune -f || sudo docker image prune -f || true
 
             sleep 5
-            docker compose ps
+            docker compose ps || docker-compose ps || sudo docker compose ps || sudo docker-compose ps || true
             echo "✅ OnlineGoLogistics App Backend deployed successfully!"
