@@ -17,61 +17,27 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Validate Secrets
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER || secrets.VPS_USERNAME || 'root' }}
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-        run: |
-          test -n "$VPS_HOST" || { echo "::error::VPS_HOST secret is missing"; exit 1; }
-          test -n "$VPS_USER" || { echo "::error::VPS_USER secret is missing"; exit 1; }
-          test -n "$VPS_SSH_KEY" || { echo "::error::VPS_SSH_KEY secret is missing"; exit 1; }
+      - name: Copy backend files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME || secrets.VPS_USER || 'root' }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          source: "backend/**,!backend/node_modules/**"
+          target: ${{ secrets.VPS_TARGET_DIR || '/var/www/onlinego_app' }}
+          strip_components: 0
 
-      - name: Package Backend
-        run: |
-          tar \
-            --exclude='backend/node_modules' \
-            --exclude='backend/database' \
-            --exclude='backend/.env' \
-            -czf backend-release.tar.gz -C backend .
-
-      - name: Upload Backend to VPS
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER || secrets.VPS_USERNAME || 'root' }}
-          VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
-          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-
-          ssh \
-            -i ~/.ssh/deploy_key \
-            -p "$VPS_PORT" \
-            -o StrictHostKeyChecking=no \
-            -o UserKnownHostsFile=/dev/null \
-            "$VPS_USER@$VPS_HOST" \
-            "mkdir -p /tmp/onlinego-app-deploy /var/www/onlinego_app/backend"
-
-          scp \
-            -i ~/.ssh/deploy_key \
-            -P "$VPS_PORT" \
-            -o StrictHostKeyChecking=no \
-            -o UserKnownHostsFile=/dev/null \
-            backend-release.tar.gz \
-            "$VPS_USER@$VPS_HOST:/tmp/onlinego-app-deploy/backend-release.tar.gz"
-
-      - name: Deploy on VPS
-        uses: appleboy/ssh-action@master
+      - name: Execute remote commands to deploy
+        uses: appleboy/ssh-action@v1.0.3
         env:
           APP_BACKEND_ENV: ${{ secrets.APP_BACKEND_ENV || secrets.BACKEND_ENV }}
         with:
           host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER || secrets.VPS_USERNAME || 'root' }}
+          username: ${{ secrets.VPS_USERNAME || secrets.VPS_USER || 'root' }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
           timeout: 60s
@@ -79,15 +45,12 @@ jobs:
           envs: APP_BACKEND_ENV
           script: |
             set -e
-            echo "=== EXTRACTING APP BACKEND ==="
-            mkdir -p /var/www/onlinego_app/backend /tmp/onlinego-app-deploy || sudo mkdir -p /var/www/onlinego_app/backend /tmp/onlinego-app-deploy
-            tar -xzf /tmp/onlinego-app-deploy/backend-release.tar.gz -C /var/www/onlinego_app/backend || sudo tar -xzf /tmp/onlinego-app-deploy/backend-release.tar.gz -C /var/www/onlinego_app/backend
-            rm -f /tmp/onlinego-app-deploy/backend-release.tar.gz || sudo rm -f /tmp/onlinego-app-deploy/backend-release.tar.gz
-
-            cd /var/www/onlinego_app/backend
+            TARGET_DIR="${{ secrets.VPS_TARGET_DIR || '/var/www/onlinego_app' }}"
+            echo "=== DEPLOYING ONLINEGO APP BACKEND IN $TARGET_DIR/backend ==="
+            cd "$TARGET_DIR/backend"
 
             if [ -n "$APP_BACKEND_ENV" ]; then
-              echo "Writing backend/.env from secret"
+              echo "Writing backend/.env from secret..."
               printf '%s\n' "$APP_BACKEND_ENV" > .env || sudo bash -c "printf '%s\n' '$APP_BACKEND_ENV' > .env"
               chmod 600 .env || sudo chmod 600 .env || true
             fi
