@@ -55,7 +55,11 @@ jobs:
               chmod 600 .env || sudo chmod 600 .env || true
             fi
 
-            echo "=== STARTING DOCKER CONTAINER (PORT 5004) ==="
+            echo "=== CLEANING UP OLD PROCESSES / CONTAINERS ==="
+            docker stop onlinego_app_backend onlinego-backend 2>/dev/null || sudo docker stop onlinego_app_backend onlinego-backend 2>/dev/null || true
+            docker rm onlinego_app_backend onlinego-backend 2>/dev/null || sudo docker rm onlinego_app_backend onlinego-backend 2>/dev/null || true
+
+            echo "=== STARTING DOCKER CONTAINER ==="
             if command -v docker-compose &> /dev/null; then
               docker-compose down --remove-orphans || true
               docker-compose up -d --build --force-recreate || docker-compose up -d --build
@@ -68,6 +72,10 @@ jobs:
             elif sudo docker-compose version &> /dev/null; then
               sudo docker-compose down --remove-orphans || true
               sudo docker-compose up -d --build --force-recreate || sudo docker-compose up -d --build
+            fi
+
+            if command -v pm2 &> /dev/null; then
+              pm2 restart all || true
             fi
 
             docker image prune -f || sudo docker image prune -f || true

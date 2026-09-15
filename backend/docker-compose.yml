@@ -5,17 +5,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: onlinego_app_backend
+    container_name: onlinego-backend
     restart: always
     ports:
-      - "5004:5001"
-    environment:
-      - PORT=5001
+      - "${PORT:-5001}:${PORT:-5001}"
     env_file:
       - .env
-    networks:
-      - onlinego_app_network
-
-networks:
-  onlinego_app_network:
-    driver: bridge
