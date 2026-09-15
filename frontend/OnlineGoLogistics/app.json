@@ -2,7 +2,7 @@
   "expo": {
     "name": "OnlineGoLogistics",
     "slug": "OnlineGoLogistics",
-    "version": "1.0.5",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "onlinegologistics",
@@ -16,7 +16,7 @@
       "permissions": [
         "INTERNET"
       ],
-      "versionCode": 6,
+      "versionCode": 8,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -50,7 +50,10 @@
       ],
       "expo-secure-store",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -61,9 +64,9 @@
       "router": {},
       "API_URL": "https://app.onlinegologistics.in",
       "eas": {
-        "projectId": "f99d72a1-886b-4ecd-90a4-82823547cee2"
+        "projectId": "0be361d9-4579-490a-a74b-855c355a2f71"
       }
     },
-    "owner": "worknailearninghub"
+    "owner": "lovenzeaapp"
   }
 }

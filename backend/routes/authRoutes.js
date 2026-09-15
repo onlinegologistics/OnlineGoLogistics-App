@@ -10,6 +10,7 @@ const {
     sendOTP,
     getProfile,
     updateProfile,
+    deleteOwnAccount,
     requestRegistrationOtp,
     verifyRegistrationOtp,
     requestLoginOtp,
@@ -35,7 +36,11 @@ router.post('/send-otp', protect, sendOTP);
 router.post('/forgot-password', forgotPassword);
 router.get('/reset-password', renderResetPassword);
 router.post('/reset-password', handleResetPassword);
-router.route('/profile').get(protect, getProfile).put(protect, updateProfile);
+router.route('/profile')
+    .get(protect, getProfile)
+    .put(protect, updateProfile)
+    .delete(protect, deleteOwnAccount);
+router.delete('/delete-account', protect, deleteOwnAccount);
 router.route('/pickup-addresses').get(protect, getPickupAddresses).post(protect, addPickupAddress);
 router.route('/register').post(protect, adminOrUser, registerUser);
 router.route('/users').get(protect, admin, getUsers);

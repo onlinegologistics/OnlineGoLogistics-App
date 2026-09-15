@@ -218,7 +218,7 @@ export default function Register() {
             value={password}
             onChangeText={setPassword}
             icon="key-outline"
-            secureTextEntry
+            isPassword={true}
             editable={!otpSent}
           />
           <Input
@@ -275,11 +275,25 @@ export default function Register() {
   );
 }
 
-function Input({ label, icon, editable = true, ...props }: any) {
+function Input({ label, icon, editable = true, isPassword, ...props }: any) {
+  const [show, setShow] = React.useState(false);
   return (
     <View style={[styles.inputBox, !editable && { opacity: 0.5 }]}>
-      <TextInput placeholder={label} style={styles.input} placeholderTextColor="#94A3B8" editable={editable} {...props} />
-      <Ionicons name={icon} size={20} color="#94A3B8" />
+      <TextInput 
+        placeholder={label} 
+        style={styles.input} 
+        placeholderTextColor="#94A3B8" 
+        editable={editable} 
+        secureTextEntry={isPassword ? !show : props.secureTextEntry} 
+        {...props} 
+      />
+      {isPassword ? (
+        <TouchableOpacity onPress={() => setShow(!show)}>
+          <Ionicons name={show ? "eye-outline" : "eye-off-outline"} size={20} color="#94A3B8" />
+        </TouchableOpacity>
+      ) : (
+        <Ionicons name={icon} size={20} color="#94A3B8" />
+      )}
     </View>
   );
 }

@@ -22,7 +22,9 @@ import { useTranslation } from "react-i18next";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getProfileApi, updateProfileApi, UserProfile } from "../../api/auth";
+import { getProfileApi, updateProfileApi, deleteAccountApi, UserProfile } from "../../api/auth";
+import { removeToken } from "../../utils/token";
+import { clearUserSession } from "../../utils/session";
 import { DARK_GLASS_THEME } from "../../constants/theme";
 import Toast from 'react-native-toast-message';
 
@@ -193,6 +195,58 @@ export default function ProfileDetails() {
       Toast.show({ type: 'error', text1: "Update Failed", text2: error?.response?.data?.message || "Could not update profile" });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const executeDeleteAccount = async () => {
+    try {
+      setSaving(true);
+      await deleteAccountApi();
+      await removeToken();
+      await clearUserSession();
+      if (Platform.OS === "web") {
+        window.alert(t("delete_account_success"));
+        router.replace("/login");
+      } else {
+        Alert.alert(t("delete_account"), t("delete_account_success"), [
+          {
+            text: "OK",
+            onPress: () => {
+              router.replace("/login");
+            },
+          },
+        ]);
+      }
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || "Could not delete account. Please try again.";
+      if (Platform.OS === "web") {
+        window.alert(msg);
+      } else {
+        Alert.alert("Error", msg);
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    if (Platform.OS === "web") {
+      if (window.confirm(t("delete_account_confirm_message"))) {
+        executeDeleteAccount();
+      }
+    } else {
+      Alert.alert(
+        t("delete_account_confirm_title"),
+        t("delete_account_confirm_message"),
+        [
+          { text: t("cancel"), style: "cancel" },
+          {
+            text: t("delete_account"),
+            style: "destructive",
+            onPress: executeDeleteAccount,
+          },
+        ]
+      );
     }
   };
 
@@ -396,6 +450,18 @@ export default function ProfileDetails() {
                     </LinearGradient>
                   </Pressable>
                 )}
+
+                {/* Danger Zone: Delete Account */}
+                <Pressable
+                  onPress={handleDeleteAccount}
+                  disabled={saving}
+                  style={styles.deleteAccountWrapper}
+                >
+                  <View style={styles.deleteAccountButton}>
+                    <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                    <Text style={styles.deleteAccountText}>{t("delete_account")}</Text>
+                  </View>
+                </Pressable>
               </View>
             </ScrollView>
           </KeyboardAvoidingView>
@@ -810,5 +876,25 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontWeight: "900",
     fontSize: 14,
+  },
+  deleteAccountWrapper: {
+    marginTop: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(239, 68, 68, 0.35)",
+    backgroundColor: "rgba(239, 68, 68, 0.08)",
+    overflow: "hidden",
+  },
+  deleteAccountButton: {
+    height: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  deleteAccountText: {
+    color: "#EF4444",
+    fontSize: 14,
+    fontWeight: "800",
   },
 });

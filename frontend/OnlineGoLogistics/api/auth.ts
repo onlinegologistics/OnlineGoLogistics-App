@@ -109,6 +109,11 @@ export const updateProfileApi = async (
   return res.data;
 };
 
+export const deleteAccountApi = async (): Promise<{ message: string; success?: boolean }> => {
+  const res = await api.delete<{ message: string; success?: boolean }>("/api/auth/profile");
+  return res.data;
+};
+
 export const registerApi = async (
   data: RegisterRequest
 ): Promise<any> => {

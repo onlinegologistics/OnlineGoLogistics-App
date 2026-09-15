@@ -541,6 +541,49 @@ const deleteUser = async (req, res) => {
     }
 };
 
+// @desc    Delete own user account (only removes user from mobileusers or users collection without touching other collections)
+// @route   DELETE /api/auth/profile or DELETE /api/auth/delete-account
+// @access  Private
+const deleteOwnAccount = async (req, res) => {
+    console.log(`\n[DEBUG] API HIT: DELETE OWN ACCOUNT ${req.originalUrl}`);
+    console.log(`[DEBUG] USER ATTEMPTING DELETE OWN ACCOUNT: ${req.user?._id}`);
+    try {
+        const userId = req.user?._id;
+        if (!userId) {
+            return res.status(401).json({ message: 'Not authorized, user ID not found' });
+        }
+
+        let deleted = false;
+        let collectionName = '';
+
+        // Check and delete from MobileUser collection first (mobile app user)
+        const mobileUser = await MobileUser.findById(userId);
+        if (mobileUser) {
+            await MobileUser.findByIdAndDelete(userId);
+            deleted = true;
+            collectionName = 'mobileusers';
+        } else {
+            // Check and delete from User collection
+            const user = await User.findById(userId);
+            if (user) {
+                await User.findByIdAndDelete(userId);
+                deleted = true;
+                collectionName = 'users';
+            }
+        }
+
+        if (!deleted) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        console.log(`[DEBUG] User ${userId} successfully removed from ${collectionName} collection ONLY. No other collection affected.`);
+        res.json({ message: 'Account deleted successfully', success: true });
+    } catch (err) {
+        console.error('[ERROR] Error deleting own account:', err.message);
+        res.status(500).json({ message: err.message });
+    }
+};
+
 // @desc    Update user
 // @route   PUT /api/auth/:id
 // @access  Private/Admin
@@ -1258,6 +1301,7 @@ module.exports = {
     sendOTP,
     getProfile,
     updateProfile,
+    deleteOwnAccount,
     getPickupAddresses,
     addPickupAddress,
     firebaseLogin,

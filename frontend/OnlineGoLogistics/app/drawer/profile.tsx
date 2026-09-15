@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
   Linking,
+  Platform,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -17,6 +18,7 @@ import { useTranslation } from "react-i18next";
 
 import { removeToken } from "../../utils/token";
 import { clearUserSession } from "../../utils/session";
+import { deleteAccountApi } from "../../api/auth";
 
 const COLORS = {
   primary: "#7C3AED",
@@ -71,6 +73,58 @@ export default function Profile() {
         },
       },
     ]);
+  };
+
+  const executeDeleteAccount = async () => {
+    try {
+      setLoading(true);
+      await deleteAccountApi();
+      await removeToken();
+      await clearUserSession();
+      if (Platform.OS === "web") {
+        window.alert(t("delete_account_success"));
+        router.replace("/login");
+      } else {
+        Alert.alert(t("delete_account"), t("delete_account_success"), [
+          {
+            text: "OK",
+            onPress: () => {
+              router.replace("/login");
+            },
+          },
+        ]);
+      }
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || "Could not delete account. Please try again.";
+      if (Platform.OS === "web") {
+        window.alert(msg);
+      } else {
+        Alert.alert("Error", msg);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    if (Platform.OS === "web") {
+      if (window.confirm(t("delete_account_confirm_message"))) {
+        executeDeleteAccount();
+      }
+    } else {
+      Alert.alert(
+        t("delete_account_confirm_title"),
+        t("delete_account_confirm_message"),
+        [
+          { text: t("cancel"), style: "cancel" },
+          {
+            text: t("delete_account"),
+            style: "destructive",
+            onPress: executeDeleteAccount,
+          },
+        ]
+      );
+    }
   };
 
   if (loading) {
@@ -227,6 +281,20 @@ export default function Profile() {
             <Text style={styles.supportText}>{t("send_complaint")}</Text>
           </Pressable>
         </View>
+
+        {/* Delete Account below Support */}
+        <View style={styles.deleteAccountCardWrapper}>
+          <Pressable style={styles.deleteAccountCard} onPress={handleDeleteAccount}>
+            <View style={[styles.menuIcon, styles.dangerIcon]}>
+              <Ionicons name="trash-outline" size={24} color={COLORS.danger} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.menuTitle, { color: COLORS.danger }]}>{t("delete_account")}</Text>
+              <Text style={styles.menuSubtitle}>{t("delete_account_subtitle")}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.danger} />
+          </Pressable>
+        </View>
       </ScrollView>
     </LinearGradient>
   );
@@ -241,6 +309,21 @@ const clayShadow = {
 };
 
 const styles = StyleSheet.create({
+  deleteAccountCardWrapper: {
+    marginTop: 22,
+    marginBottom: 16,
+  },
+  deleteAccountCard: {
+    borderRadius: 24,
+    backgroundColor: "rgba(254, 242, 242, 0.9)",
+    borderWidth: 1.2,
+    borderColor: "rgba(239, 68, 68, 0.35)",
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    ...clayShadow,
+  },
   container: {
     flex: 1,
   },

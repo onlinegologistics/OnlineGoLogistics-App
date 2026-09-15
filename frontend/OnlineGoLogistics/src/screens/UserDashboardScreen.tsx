@@ -37,7 +37,7 @@ import {
 import { clearUserSession } from "../../utils/session";
 import { DARK_GLASS_THEME } from "../../constants/theme";
 import { removeToken } from "../../utils/token";
-import { getProfileApi } from "../../api/auth";
+import { getProfileApi, deleteAccountApi } from "../../api/auth";
 import { getNotificationsApi, markAsReadApi, NotificationResponse } from "../../api/notification";
 import Toast from 'react-native-toast-message';
 import { useTranslation } from "react-i18next";
@@ -72,6 +72,58 @@ export default function UserDashboardScreen() {
     await removeToken();
     await clearUserSession();
     router.replace("/login");
+  };
+
+  const executeDeleteAccount = async () => {
+    try {
+      setRefreshing(true);
+      await deleteAccountApi();
+      await removeToken();
+      await clearUserSession();
+      if (Platform.OS === "web") {
+        window.alert(t("delete_account_success"));
+        router.replace("/login");
+      } else {
+        Alert.alert(t("delete_account"), t("delete_account_success"), [
+          {
+            text: "OK",
+            onPress: () => {
+              router.replace("/login");
+            },
+          },
+        ]);
+      }
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || "Could not delete account. Please try again.";
+      if (Platform.OS === "web") {
+        window.alert(msg);
+      } else {
+        Alert.alert("Error", msg);
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    if (Platform.OS === "web") {
+      if (window.confirm(t("delete_account_confirm_message"))) {
+        executeDeleteAccount();
+      }
+    } else {
+      Alert.alert(
+        t("delete_account_confirm_title"),
+        t("delete_account_confirm_message"),
+        [
+          { text: t("cancel"), style: "cancel" },
+          {
+            text: t("delete_account"),
+            style: "destructive",
+            onPress: executeDeleteAccount,
+          },
+        ]
+      );
+    }
   };
 
   const changeLanguage = async (lang: string) => {
@@ -429,6 +481,20 @@ export default function UserDashboardScreen() {
 
           <SectionTitle title={t("support")} />
           {renderSupportCard(true)}
+
+          {/* Delete Account option below Support */}
+          <View style={styles.deleteAccountCardWrapper}>
+            <Pressable style={styles.deleteAccountCard} onPress={handleDeleteAccount}>
+              <View style={styles.deleteAccountIconWrap}>
+                <Ionicons name="trash-outline" size={20} color="#EF4444" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.deleteAccountCardTitle}>{t("delete_account")}</Text>
+                <Text style={styles.deleteAccountCardSubtitle}>{t("delete_account_subtitle")}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#EF4444" />
+            </Pressable>
+          </View>
         </>
       );
     }
@@ -640,12 +706,14 @@ function ProfileActionRow({
   icon,
   onPress,
   color,
+  titleColor,
 }: {
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
   color?: string;
+  titleColor?: string;
 }) {
   const iconColor = color || DARK_GLASS_THEME.electricBlue;
   return (
@@ -654,7 +722,7 @@ function ProfileActionRow({
         <Ionicons name={icon} size={21} color={iconColor} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={styles.profileActionTitle}>{title}</Text>
+        <Text style={[styles.profileActionTitle, titleColor ? { color: titleColor } : null]}>{title}</Text>
         <Text style={styles.profileActionSubtitle}>{subtitle}</Text>
       </View>
       <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
@@ -1118,6 +1186,43 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 14,
     ...DARK_GLASS_THEME.shadow,
+  },
+  deleteAccountCardWrapper: {
+    marginHorizontal: 16,
+    marginTop: 18,
+    marginBottom: 8,
+  },
+  deleteAccountCard: {
+    minHeight: 64,
+    borderRadius: 20,
+    backgroundColor: "rgba(254, 242, 242, 0.9)",
+    borderWidth: 1.2,
+    borderColor: "rgba(239, 68, 68, 0.35)",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 14,
+    ...DARK_GLASS_THEME.shadow,
+  },
+  deleteAccountIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: "rgba(239, 68, 68, 0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteAccountCardTitle: {
+    color: "#EF4444",
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  deleteAccountCardSubtitle: {
+    color: "#991B1B",
+    fontSize: 12,
+    fontWeight: "500",
+    marginTop: 2,
   },
   profileActionRow: {
     minHeight: 72,

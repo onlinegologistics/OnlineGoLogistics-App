@@ -41,6 +41,7 @@ export default function Login() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -352,17 +353,18 @@ export default function Login() {
 
         {loginMode === "password" ? (
           <>
-            {/* Password */}
             <View style={styles.inputBox}>
               <TextInput
                 placeholder={t("password_label")}
                 placeholderTextColor="#94A3B8"
-                secureTextEntry
+                secureTextEntry={!showPassword}
                 style={styles.input}
                 value={password}
                 onChangeText={setPassword}
               />
-              <Ionicons name="key-outline" size={20} color="#94A3B8" />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Ionicons name={showPassword ? "eye-outline" : "eye-off-outline"} size={20} color="#94A3B8" />
+              </TouchableOpacity>
             </View>
 
             {/* Options */}
