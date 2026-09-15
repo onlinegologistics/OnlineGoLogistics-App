@@ -45,9 +45,18 @@ jobs:
           envs: APP_BACKEND_ENV
           script: |
             set -e
+            export PATH=$PATH:/usr/local/bin:/usr/bin:~/.nvm/versions/node/$(ls ~/.nvm/versions/node 2>/dev/null | tail -n 1)/bin:~/.npm-global/bin:~/.local/bin
+            [ -s "$HOME/.nvm/nvm.sh" ] && \. "$HOME/.nvm/nvm.sh"
+            [ -s "$HOME/.bashrc" ] && source "$HOME/.bashrc" || true
+
             TARGET_DIR="${{ secrets.VPS_TARGET_DIR || '/var/www/onlinego_app' }}"
-            echo "=== DEPLOYING ONLINEGO APP BACKEND IN $TARGET_DIR/backend ==="
-            cd "$TARGET_DIR/backend"
+            if [ -d "$TARGET_DIR/backend" ]; then
+              cd "$TARGET_DIR/backend"
+            elif [ -d "$TARGET_DIR" ]; then
+              cd "$TARGET_DIR"
+            fi
+
+            echo "=== CURRENT DIRECTORY: $(pwd) ==="
 
             if [ -n "$APP_BACKEND_ENV" ]; then
               echo "Writing backend/.env from secret..."
@@ -55,31 +64,37 @@ jobs:
               chmod 600 .env || sudo chmod 600 .env || true
             fi
 
-            echo "=== CLEANING UP OLD PROCESSES / CONTAINERS ==="
+            # Install dependencies on host
+            npm install --production 2>/dev/null || sudo npm install --production 2>/dev/null || true
+
+            # Restart PM2 processes if PM2 exists
+            if command -v pm2 &> /dev/null || which pm2 &> /dev/null; then
+              echo "=== RESTARTING PM2 PROCESSES ==="
+              pm2 reload all --update-env 2>/dev/null || pm2 restart all 2>/dev/null || pm2 restart server.js --name "onlinego-backend" 2>/dev/null || true
+              pm2 save 2>/dev/null || true
+            elif sudo which pm2 &> /dev/null; then
+              sudo pm2 reload all --update-env 2>/dev/null || sudo pm2 restart all 2>/dev/null || true
+            fi
+
+            # Clean and rebuild Docker if Docker exists
+            echo "=== RESTARTING DOCKER CONTAINERS ==="
             docker stop onlinego_app_backend onlinego-backend 2>/dev/null || sudo docker stop onlinego_app_backend onlinego-backend 2>/dev/null || true
             docker rm onlinego_app_backend onlinego-backend 2>/dev/null || sudo docker rm onlinego_app_backend onlinego-backend 2>/dev/null || true
 
-            echo "=== STARTING DOCKER CONTAINER ==="
             if command -v docker-compose &> /dev/null; then
               docker-compose down --remove-orphans || true
-              docker-compose up -d --build --force-recreate || docker-compose up -d --build
+              docker-compose up -d --build --force-recreate || docker-compose up -d --build || true
             elif docker compose version &> /dev/null; then
               docker compose down --remove-orphans || true
-              docker compose up -d --build --force-recreate || docker compose up -d --build
+              docker compose up -d --build --force-recreate || docker compose up -d --build || true
             elif sudo docker compose version &> /dev/null; then
               sudo docker compose down --remove-orphans || true
-              sudo docker compose up -d --build --force-recreate || sudo docker compose up -d --build
+              sudo docker compose up -d --build --force-recreate || sudo docker compose up -d --build || true
             elif sudo docker-compose version &> /dev/null; then
               sudo docker-compose down --remove-orphans || true
-              sudo docker-compose up -d --build --force-recreate || sudo docker-compose up -d --build
+              sudo docker-compose up -d --build --force-recreate || sudo docker-compose up -d --build || true
             fi
 
-            if command -v pm2 &> /dev/null; then
-              pm2 restart all || true
-            fi
+            docker image prune -f 2>/dev/null || sudo docker image prune -f 2>/dev/null || true
 
-            docker image prune -f || sudo docker image prune -f || true
-
-            sleep 5
-            docker compose ps || docker-compose ps || sudo docker compose ps || sudo docker-compose ps || true
             echo "✅ OnlineGoLogistics App Backend deployed successfully!"

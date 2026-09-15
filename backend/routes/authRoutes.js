@@ -41,6 +41,7 @@ router.route('/profile')
     .put(protect, updateProfile)
     .delete(protect, deleteOwnAccount);
 router.delete('/delete-account', protect, deleteOwnAccount);
+router.post('/delete-account', protect, deleteOwnAccount);
 router.route('/pickup-addresses').get(protect, getPickupAddresses).post(protect, addPickupAddress);
 router.route('/register').post(protect, adminOrUser, registerUser);
 router.route('/users').get(protect, admin, getUsers);
