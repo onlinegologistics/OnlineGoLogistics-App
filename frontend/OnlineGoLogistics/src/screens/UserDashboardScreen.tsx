@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   BackHandler,
   KeyboardAvoidingView,
   Linking,
+  Modal,
   Platform,
   Pressable,
   RefreshControl,
@@ -68,6 +70,14 @@ export default function UserDashboardScreen() {
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
 
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteResultModal, setDeleteResultModal] = useState<{
+    visible: boolean;
+    success: boolean;
+    message: string;
+  }>({ visible: false, success: false, message: "" });
+
   const handleLogout = async () => {
     await removeToken();
     await clearUserSession();
@@ -76,54 +86,31 @@ export default function UserDashboardScreen() {
 
   const executeDeleteAccount = async () => {
     try {
-      setRefreshing(true);
+      setDeletingAccount(true);
       await deleteAccountApi();
       await removeToken();
       await clearUserSession();
-      if (Platform.OS === "web") {
-        window.alert(t("delete_account_success"));
-        router.replace("/login");
-      } else {
-        Alert.alert(t("delete_account"), t("delete_account_success"), [
-          {
-            text: "OK",
-            onPress: () => {
-              router.replace("/login");
-            },
-          },
-        ]);
-      }
+      setDeleteModalVisible(false);
+      setDeleteResultModal({
+        visible: true,
+        success: true,
+        message: t("delete_account_success") || "Your account has been deleted successfully.",
+      });
     } catch (error: any) {
       const msg = error?.response?.data?.message || "Could not delete account. Please try again.";
-      if (Platform.OS === "web") {
-        window.alert(msg);
-      } else {
-        Alert.alert("Error", msg);
-      }
+      setDeleteModalVisible(false);
+      setDeleteResultModal({
+        visible: true,
+        success: false,
+        message: msg,
+      });
     } finally {
-      setRefreshing(false);
+      setDeletingAccount(false);
     }
   };
 
   const handleDeleteAccount = () => {
-    if (Platform.OS === "web") {
-      if (window.confirm(t("delete_account_confirm_message"))) {
-        executeDeleteAccount();
-      }
-    } else {
-      Alert.alert(
-        t("delete_account_confirm_title"),
-        t("delete_account_confirm_message"),
-        [
-          { text: t("cancel"), style: "cancel" },
-          {
-            text: t("delete_account"),
-            style: "destructive",
-            onPress: executeDeleteAccount,
-          },
-        ]
-      );
-    }
+    setDeleteModalVisible(true);
   };
 
   const changeLanguage = async (lang: string) => {
@@ -673,6 +660,127 @@ export default function UserDashboardScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
         <BottomNav activeTab={activeTab} onChange={setActiveTab} />
+
+        {/* 🗑️ BEAUTIFUL CUSTOM DELETE ACCOUNT CONFIRMATION MODAL */}
+        <Modal
+          visible={deleteModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => {
+            if (!deletingAccount) setDeleteModalVisible(false);
+          }}
+        >
+          <View style={styles.customModalOverlay}>
+            <View style={styles.customModalCard}>
+              {/* Pulsing Danger Icon Container */}
+              <View style={styles.dangerIconContainer}>
+                <View style={styles.dangerIconGlow} />
+                <Ionicons name="trash-outline" size={36} color="#EF4444" />
+              </View>
+
+              {/* Warning Pill */}
+              <View style={styles.warningPill}>
+                <Ionicons name="warning-outline" size={13} color="#DC2626" />
+                <Text style={styles.warningPillText}>Permanent Action</Text>
+              </View>
+
+              <Text style={styles.customModalTitle}>{t("delete_account_confirm_title")}</Text>
+              <Text style={styles.customModalMessage}>
+                {t("delete_account_confirm_message")}
+              </Text>
+
+              {/* Action Buttons */}
+              <View style={styles.customModalActions}>
+                <Pressable
+                  style={styles.customModalCancelBtn}
+                  onPress={() => setDeleteModalVisible(false)}
+                  disabled={deletingAccount}
+                >
+                  <Text style={styles.customModalCancelText}>{t("cancel")}</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.customModalDeleteBtn}
+                  onPress={executeDeleteAccount}
+                  disabled={deletingAccount}
+                >
+                  <LinearGradient
+                    colors={["#EF4444", "#DC2626"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.customModalDeleteGrad}
+                  >
+                    {deletingAccount ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <Ionicons name="trash" size={17} color="#FFFFFF" />
+                        <Text style={styles.customModalDeleteText}>{t("delete_account")}</Text>
+                      </>
+                    )}
+                  </LinearGradient>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* 📋 CUSTOM RESULT MODAL (SUCCESS / ERROR) */}
+        <Modal
+          visible={deleteResultModal.visible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => {
+            if (deleteResultModal.success) {
+              setDeleteResultModal((prev: any) => ({ ...prev, visible: false }));
+              router.replace("/login");
+            } else {
+              setDeleteResultModal((prev: any) => ({ ...prev, visible: false }));
+            }
+          }}
+        >
+          <View style={styles.customModalOverlay}>
+            <View style={styles.customModalCard}>
+              <View style={[
+                styles.dangerIconContainer,
+                deleteResultModal.success 
+                  ? { backgroundColor: "rgba(34, 197, 94, 0.12)", borderColor: "rgba(34, 197, 94, 0.25)" } 
+                  : { backgroundColor: "rgba(239, 68, 68, 0.12)", borderColor: "rgba(239, 68, 68, 0.25)" }
+              ]}>
+                <Ionicons
+                  name={deleteResultModal.success ? "checkmark-circle" : "alert-circle"}
+                  size={38}
+                  color={deleteResultModal.success ? "#22C55E" : "#EF4444"}
+                />
+              </View>
+
+              <Text style={styles.customModalTitle}>
+                {deleteResultModal.success ? "Account Deleted" : "Deletion Failed"}
+              </Text>
+              <Text style={styles.customModalMessage}>
+                {deleteResultModal.message}
+              </Text>
+
+              <Pressable
+                style={{ width: "100%", borderRadius: 14, overflow: "hidden" }}
+                onPress={() => {
+                  const isSuccess = deleteResultModal.success;
+                  setDeleteResultModal((prev: any) => ({ ...prev, visible: false }));
+                  if (isSuccess) {
+                    router.replace("/login");
+                  }
+                }}
+              >
+                <LinearGradient
+                  colors={deleteResultModal.success ? ["#22C55E", "#16A34A"] : [DARK_GLASS_THEME.electricBlue, DARK_GLASS_THEME.purple]}
+                  style={{ height: 48, justifyContent: "center", alignItems: "center" }}
+                >
+                  <Text style={{ color: "#FFFFFF", fontWeight: "800", fontSize: 15 }}>OK</Text>
+                </LinearGradient>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -1588,6 +1696,117 @@ const styles = StyleSheet.create({
   },
   langTextActive: {
     color: "#FFFFFF",
+  },
+  /* Custom Delete / Confirmation Modal */
+  customModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(11, 21, 40, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  customModalCard: {
+    width: "100%",
+    maxWidth: 380,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 22,
+    alignItems: "center",
+    shadowColor: "#EF4444",
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 16,
+  },
+  dangerIconContainer: {
+    width: 76,
+    height: 76,
+    borderRadius: 26,
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    borderWidth: 1.5,
+    borderColor: "rgba(239, 68, 68, 0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  dangerIconGlow: {
+    position: "absolute",
+    width: 90,
+    height: 90,
+    borderRadius: 30,
+    backgroundColor: "rgba(239, 68, 68, 0.06)",
+  },
+  warningPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    marginBottom: 12,
+  },
+  warningPillText: {
+    color: "#DC2626",
+    fontSize: 12,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  customModalTitle: {
+    fontSize: 21,
+    fontWeight: "900",
+    color: "#0F172A",
+    textAlign: "center",
+    marginBottom: 8,
+    letterSpacing: -0.3,
+  },
+  customModalMessage: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: "#64748B",
+    textAlign: "center",
+    marginBottom: 24,
+    paddingHorizontal: 6,
+  },
+  customModalActions: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+  customModalCancelBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 15,
+    borderWidth: 1.2,
+    borderColor: "#E2E8F0",
+    backgroundColor: "#F8FAFC",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  customModalCancelText: {
+    color: "#64748B",
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  customModalDeleteBtn: {
+    flex: 1.3,
+    borderRadius: 15,
+    overflow: "hidden",
+  },
+  customModalDeleteGrad: {
+    height: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  customModalDeleteText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "900",
   },
 });
 
