@@ -11,7 +11,7 @@ const firebaseAdmin = require('../config/firebaseAdmin');
 
 // Generate JWT
 const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, {
+    return jwt.sign({ id }, process.env.JWT_SECRET || 'supersecretkey123', {
         expiresIn: '30d',
     });
 };

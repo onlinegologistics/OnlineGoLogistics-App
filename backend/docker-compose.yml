@@ -8,6 +8,15 @@ services:
     container_name: onlinego-backend
     restart: always
     ports:
-      - "${PORT:-5001}:${PORT:-5001}"
+      - "5001:5001"
+      - "5003:5001"
+      - "5004:5001"
+      - "5010:5001"
+    environment:
+      - PORT=5001
+      - NODE_ENV=production
+      - MONGO_URI=mongodb+srv://aibusin009_db_user:zIu0Qm1zNFLNMLHJ@cluster0.ggtm45i.mongodb.net/?appName=Cluster0
+      - DB_NAME=luggage_billing
+      - JWT_SECRET=supersecretkey123
     env_file:
       - .env

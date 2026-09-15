@@ -14,7 +14,7 @@ const protect = async (req, res, next) => {
 
             let decoded;
             try {
-                decoded = jwt.verify(token, process.env.JWT_SECRET);
+                decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecretkey123');
             } catch (jwtErr) {
                 console.error('[Auth] JWT verify failed:', jwtErr.message);
                 return res.status(401).json({ message: 'Not authorized, token failed', error: jwtErr.message });

@@ -58,13 +58,16 @@ jobs:
 
             echo "=== CURRENT DIRECTORY: $(pwd) ==="
 
+            # Ensure .env exists so docker compose doesn't fail
+            touch .env
+
             if [ -n "$APP_BACKEND_ENV" ]; then
               echo "Writing backend/.env from secret..."
               printf '%s\n' "$APP_BACKEND_ENV" > .env || sudo bash -c "printf '%s\n' '$APP_BACKEND_ENV' > .env"
               chmod 600 .env || sudo chmod 600 .env || true
             fi
 
-            # Install dependencies on host
+            # Install dependencies on host for PM2
             npm install --production 2>/dev/null || sudo npm install --production 2>/dev/null || true
 
             # Restart PM2 processes if PM2 exists
@@ -76,7 +79,7 @@ jobs:
               sudo pm2 reload all --update-env 2>/dev/null || sudo pm2 restart all 2>/dev/null || true
             fi
 
-            # Clean and rebuild Docker if Docker exists
+            # Clean and rebuild Docker
             echo "=== RESTARTING DOCKER CONTAINERS ==="
             docker stop onlinego_app_backend onlinego-backend 2>/dev/null || sudo docker stop onlinego_app_backend onlinego-backend 2>/dev/null || true
             docker rm onlinego_app_backend onlinego-backend 2>/dev/null || sudo docker rm onlinego_app_backend onlinego-backend 2>/dev/null || true
@@ -96,5 +99,9 @@ jobs:
             fi
 
             docker image prune -f 2>/dev/null || sudo docker image prune -f 2>/dev/null || true
+
+            sleep 5
+            echo "=== TESTING LOCAL PORT CONNECTIVITY ==="
+            curl -I http://localhost:5001/ 2>/dev/null || curl -I http://localhost:5010/ 2>/dev/null || true
 
             echo "✅ OnlineGoLogistics App Backend deployed successfully!"
