@@ -7,13 +7,18 @@ import { DARK_GLASS_THEME } from "../../../constants/theme";
 const statusColors: Record<string, { bg: string; text: string }> = {
   Pending: { bg: "rgba(255, 138, 61, 0.12)", text: DARK_GLASS_THEME.orange },
   Created: { bg: "rgba(255, 138, 61, 0.12)", text: DARK_GLASS_THEME.orange },
-  "In Transit": { bg: "rgba(79, 124, 255, 0.12)", text: DARK_GLASS_THEME.electricBlue },
+  Approved: { bg: "rgba(59, 130, 246, 0.12)", text: "#3B82F6" },
   Accepted: { bg: "rgba(79, 124, 255, 0.12)", text: DARK_GLASS_THEME.electricBlue },
   "Picked Up": { bg: "rgba(79, 124, 255, 0.12)", text: DARK_GLASS_THEME.electricBlue },
   "At Branch": { bg: "rgba(20, 184, 166, 0.12)", text: "#14B8A6" },
+  "In Transit": { bg: "rgba(79, 124, 255, 0.12)", text: DARK_GLASS_THEME.electricBlue },
+  Dispatched: { bg: "rgba(79, 124, 255, 0.12)", text: DARK_GLASS_THEME.electricBlue },
   "Out for Delivery": { bg: "rgba(139, 92, 246, 0.12)", text: "#8B5CF6" },
+  "Destination Arrived": { bg: "rgba(168, 85, 247, 0.12)", text: "#A855F7" },
   Delivered: { bg: "rgba(94, 234, 212, 0.12)", text: DARK_GLASS_THEME.cyan },
   Cancelled: { bg: "rgba(239, 68, 68, 0.12)", text: "#EF4444" },
+  Processing: { bg: "rgba(245, 158, 11, 0.12)", text: "#F59E0B" },
+  Confirmed: { bg: "rgba(16, 185, 129, 0.12)", text: "#10B981" },
 };
 
 const displayStatus = (status: ShipmentStatus) => status;
@@ -26,7 +31,7 @@ export default function ShipmentCard({
   onViewDetails: (shipment: ShipmentRecord) => void;
 }) {
   const label = displayStatus(shipment.status);
-  const colors = statusColors[label] || statusColors.Pending;
+  const colors = statusColors[label] || { bg: "rgba(79, 124, 255, 0.12)", text: DARK_GLASS_THEME.electricBlue };
 
   return (
     <View style={styles.card}>

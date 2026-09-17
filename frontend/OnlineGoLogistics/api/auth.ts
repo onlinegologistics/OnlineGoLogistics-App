@@ -149,6 +149,13 @@ export const addPickupAddressApi = async (
   return res.data;
 };
 
+export const deletePickupAddressApi = async (
+  id: string
+): Promise<{ message: string }> => {
+  const res = await api.delete<{ message: string }>(`/api/auth/pickup-addresses/${id}`);
+  return res.data;
+};
+
 export const forgotPasswordApi = async (
   email: string
 ): Promise<{ message: string }> => {

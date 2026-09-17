@@ -3,8 +3,13 @@ const mongoose = require('mongoose');
 const parcelRequestSchema = mongoose.Schema({
     customer: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
         required: true,
+        refPath: 'customerModel',
+    },
+    customerModel: {
+        type: String,
+        enum: ['User', 'MobileUser'],
+        default: 'User',
     },
     pickupAddress: {
         type: String,
@@ -57,8 +62,32 @@ const parcelRequestSchema = mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['Pending', 'Accepted', 'Picked Up', 'In Transit', 'Delivered', 'Cancelled'],
+        enum: ['Pending', 'Accepted', 'Picked Up', 'In Transit', 'Delivered', 'Cancelled', 'Approved', 'Destination Arrived'],
         default: 'Pending',
+    },
+    currentStatus: {
+        type: String,
+        default: 'Pending',
+    },
+    trackingId: {
+        type: String,
+        index: true,
+        sparse: true,
+    },
+    currentBranch: {
+        type: String,
+        default: 'Central Hub',
+    },
+    currentLocation: {
+        type: String,
+    },
+    assignedStaff: {
+        type: String,
+        default: '',
+    },
+    trackingHistory: {
+        type: Array,
+        default: [],
     },
     updatedBy: {
         type: mongoose.Schema.Types.ObjectId,

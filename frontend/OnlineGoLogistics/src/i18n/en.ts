@@ -1,6 +1,6 @@
 export default {
   new_shipment: "New Shipment",
-  use_one: "Use one pickup address and add multiple delivery shipments as needed.",
+  use_one: "Enter pickup address and delivery shipment details.",
   pickup_details: "Pickup Details",
   customer_name: "Customer Name",
   mobile_number: "Mobile Number",
@@ -24,6 +24,15 @@ export default {
   cancel: "Cancel",
   save: "Save",
   add_another_location: "Add another location",
+
+  // Delete Address Modal
+  remove_location: "Remove Location?",
+  remove_location_confirm: "Are you sure you want to remove this pickup address from saved locations?",
+  remove: "Remove",
+  address_removed_success: "Pickup address removed successfully!",
+  address_removed_error: "Failed to remove address",
+  address_added_success: "Pickup address added successfully!",
+  address_added_error: "Failed to add address",
   
   // Dashboard Screen
   welcome_back: "Welcome Back",

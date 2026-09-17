@@ -4,13 +4,19 @@ import "../../api/interceptor";
 export type ShipmentStatus =
   | "Pending"
   | "Created"
+  | "Approved"
   | "Accepted"
   | "Picked Up"
   | "At Branch"
   | "In Transit"
   | "Out for Delivery"
+  | "Destination Arrived"
   | "Delivered"
-  | "Cancelled";
+  | "Cancelled"
+  | "Dispatched"
+  | "Processing"
+  | "Confirmed"
+  | string;
 
 export interface AddShipmentPayload {
   customerName: string;
@@ -81,22 +87,45 @@ export interface MobileUserDefaults {
 }
 
 const normalizeStatus = (status?: string): ShipmentStatus => {
-  const s = status || "Pending";
-  const valid: ShipmentStatus[] = [
-    "Pending",
-    "Created",
-    "Accepted",
-    "Picked Up",
-    "At Branch",
-    "In Transit",
-    "Out for Delivery",
-    "Delivered",
-    "Cancelled",
-  ];
-  if (valid.includes(s as any)) {
-    return s as ShipmentStatus;
+  if (!status || !status.trim()) return "Pending";
+  const raw = status.trim();
+  const lower = raw.toLowerCase();
+
+  const statusMap: Record<string, string> = {
+    pending: "Pending",
+    created: "Created",
+    approved: "Approved",
+    accepted: "Accepted",
+    "picked up": "Picked Up",
+    picked_up: "Picked Up",
+    pickedup: "Picked Up",
+    "at branch": "At Branch",
+    at_branch: "At Branch",
+    "in transit": "In Transit",
+    in_transit: "In Transit",
+    "in-transit": "In Transit",
+    "out for delivery": "Out for Delivery",
+    out_for_delivery: "Out for Delivery",
+    "out-for-delivery": "Out for Delivery",
+    "destination arrived": "Destination Arrived",
+    destination_arrived: "Destination Arrived",
+    delivered: "Delivered",
+    cancelled: "Cancelled",
+    canceled: "Cancelled",
+    dispatched: "Dispatched",
+    processing: "Processing",
+    confirmed: "Confirmed",
+  };
+
+  if (statusMap[lower]) {
+    return statusMap[lower];
   }
-  return "Pending";
+
+  // Capitalize words for clean display if unmapped string
+  return raw
+    .split(/\s+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
 };
 
 const cityFromAddress = (address?: string) => {
@@ -161,7 +190,18 @@ export const getRecentShipments = async (): Promise<ShipmentRecord[]> => {
 export const getCustomerDashboard = async (): Promise<CustomerDashboard> => {
   const shipments = await getRecentShipments();
 
-  const inTransitStatuses: ShipmentStatus[] = ["Accepted", "Picked Up", "In Transit"];
+  const inTransitStatuses: string[] = [
+    "Accepted",
+    "Approved",
+    "Picked Up",
+    "At Branch",
+    "In Transit",
+    "Dispatched",
+    "Out for Delivery",
+    "Destination Arrived",
+    "Processing",
+    "Confirmed",
+  ];
   const totalAmount = shipments.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
 
   return {

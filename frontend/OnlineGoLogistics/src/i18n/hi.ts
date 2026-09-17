@@ -1,6 +1,6 @@
 export default {
   new_shipment: "नया शिपमेंट",
-  use_one:"एक ही पिकअप पता उपयोग करें और आवश्यकता के अनुसार कई डिलीवरी शिपमेंट जोड़ें।",
+  use_one: "पिकअप पता और डिलीवरी शिपमेंट विवरण दर्ज करें।",
   pickup_details: "पिकअप विवरण",
   customer_name: "ग्राहक का नाम",
   mobile_number: "मोबाइल नंबर",
@@ -24,6 +24,15 @@ export default {
   cancel: "रद्द करें",
   save: "सहेजें",
   add_another_location: "दूसरा स्थान जोड़ें",
+
+  // Delete Address Modal
+  remove_location: "स्थान हटाएं?",
+  remove_location_confirm: "क्या आप वाकई इस पिकअप पते को सहेजे गए स्थानों से हटाना चाहते हैं?",
+  remove: "हटाएं",
+  address_removed_success: "पिकअप पता सफलतापूर्वक हटा दिया गया!",
+  address_removed_error: "पता हटाने में विफल",
+  address_added_success: "पिकअप पता सफलतापूर्वक जोड़ा गया!",
+  address_added_error: "पता जोड़ने में विफल",
   
   // Dashboard Screen
   welcome_back: "स्वागत हे",

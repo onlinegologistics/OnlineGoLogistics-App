@@ -857,6 +857,36 @@ const addPickupAddress = async (req, res) => {
     }
 };
 
+// @desc    Delete a pickup address
+// @route   DELETE /api/auth/pickup-addresses/:id
+// @access  Private
+const deletePickupAddress = async (req, res) => {
+    try {
+        const addressDoc = await PickupAddress.findOne({ _id: req.params.id, user: req.user._id });
+        if (!addressDoc) {
+            return res.status(404).json({ message: 'Pickup address not found' });
+        }
+
+        const wasPrimary = addressDoc.isPrimary;
+        await PickupAddress.deleteOne({ _id: req.params.id, user: req.user._id });
+
+        if (wasPrimary) {
+            const nextPrimary = await PickupAddress.findOne({ user: req.user._id }).sort({ createdAt: -1 });
+            if (nextPrimary) {
+                nextPrimary.isPrimary = true;
+                await nextPrimary.save();
+                await User.findByIdAndUpdate(req.user._id, { address: nextPrimary.address, pickupAddress: nextPrimary.address });
+                const MobileUser = require('../models/MobileUser');
+                await MobileUser.findByIdAndUpdate(req.user._id, { address: nextPrimary.address, pickupAddress: nextPrimary.address });
+            }
+        }
+
+        res.json({ message: 'Pickup address removed successfully' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
 // @desc    Verify Firebase ID token and login/register mobile user
 // @route   POST /api/auth/firebase-login
 // @access  Public
@@ -1304,6 +1334,7 @@ module.exports = {
     deleteOwnAccount,
     getPickupAddresses,
     addPickupAddress,
+    deletePickupAddress,
     firebaseLogin,
     registerMobileUser,
     forgotPassword,

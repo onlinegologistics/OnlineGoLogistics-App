@@ -17,6 +17,7 @@ const {
     verifyLoginOtp,
     getPickupAddresses,
     addPickupAddress,
+    deletePickupAddress,
     firebaseLogin,
     registerMobileUser,
     forgotPassword,
@@ -43,6 +44,7 @@ router.route('/profile')
 router.delete('/delete-account', protect, deleteOwnAccount);
 router.post('/delete-account', protect, deleteOwnAccount);
 router.route('/pickup-addresses').get(protect, getPickupAddresses).post(protect, addPickupAddress);
+router.delete('/pickup-addresses/:id', protect, deletePickupAddress);
 router.route('/register').post(protect, adminOrUser, registerUser);
 router.route('/users').get(protect, admin, getUsers);
 router.route('/customers').get(protect, adminOrUser, getCustomers);

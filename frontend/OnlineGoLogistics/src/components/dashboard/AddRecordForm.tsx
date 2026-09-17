@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Pressable,
   StyleSheet,
@@ -21,7 +22,7 @@ import {
   getCities,
   getBranches,
 } from "../../services/logisticsApi";
-import { getPickupAddressesApi, addPickupAddressApi, PickupAddressResponse } from "../../../api/auth";
+import { getPickupAddressesApi, addPickupAddressApi, deletePickupAddressApi, PickupAddressResponse } from "../../../api/auth";
 import { DARK_GLASS_THEME } from "../../../constants/theme";
 
 const initialShared = {
@@ -119,6 +120,9 @@ export default function AddRecordForm({
   const [newAddressCity, setNewAddressCity] = useState("");
   const [savingNewAddress, setSavingNewAddress] = useState(false);
 
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deletingAddress, setDeletingAddress] = useState<{ id: string; address: string } | null>(null);
+  const [deletingLoading, setDeletingLoading] = useState(false);
 
   const [availableCities, setAvailableCities] = useState<string[]>(STATIC_CITIES);
   const [loadingCities, setLoadingCities] = useState(false);
@@ -153,11 +157,35 @@ export default function AddRecordForm({
       setNewAddressCity("");
       await fetchAddresses();
       setSharedValue("pickupAddress", newAddr.address);
-      Toast.show({ type: 'success', text1: "Success", text2: "Pickup address added successfully!" });
+      Toast.show({ type: 'success', text1: t("address_added_success") });
     } catch (err: any) {
-      Toast.show({ type: 'error', text1: "Error", text2: err?.response?.data?.message || "Failed to add address" });
+      Toast.show({ type: 'error', text1: t("address_added_error"), text2: err?.response?.data?.message || "" });
     } finally {
       setSavingNewAddress(false);
+    }
+  };
+
+  const handleRemoveAddress = (addressId: string, addressText: string) => {
+    setDeletingAddress({ id: addressId, address: addressText });
+    setDeleteModalVisible(true);
+  };
+
+  const confirmDeleteAddress = async () => {
+    if (!deletingAddress) return;
+    try {
+      setDeletingLoading(true);
+      await deletePickupAddressApi(deletingAddress.id);
+      if (shared.pickupAddress === deletingAddress.address) {
+        setSharedValue("pickupAddress", "");
+      }
+      setDeleteModalVisible(false);
+      setDeletingAddress(null);
+      await fetchAddresses();
+      Toast.show({ type: "success", text1: t("address_removed_success") });
+    } catch (err: any) {
+      Toast.show({ type: "error", text1: t("address_removed_error"), text2: err?.response?.data?.message || "" });
+    } finally {
+      setDeletingLoading(false);
     }
   };
 
@@ -216,11 +244,6 @@ export default function AddRecordForm({
   const setShipmentValue = (index: number, key: keyof ShipmentState, value: string) => {
     setShipments((prev) => prev.map((item, i) => (i === index ? { ...item, [key]: value } : item)));
     setShipmentErrors((prev) => prev.map((item, i) => (i === index ? { ...item, [key]: undefined } : item)));
-  };
-
-  const addMoreShipment = () => {
-    setShipments((prev) => [...prev, createShipment()]);
-    setShipmentErrors((prev) => [...prev, {}]);
   };
 
   const removeShipment = (index: number) => {
@@ -322,9 +345,16 @@ export default function AddRecordForm({
               style={[styles.addressItem, styles.addressItemActive]}
               onPress={() => setSharedValue("pickupAddress", shared.pickupAddress)}
             >
-              <Text style={[styles.addressText, styles.addressTextActive]}>
+              <Text style={[styles.addressText, styles.addressTextActive]} numberOfLines={2}>
                 {shared.pickupAddress} (Profile Default)
               </Text>
+              <Pressable
+                style={styles.deleteAddressBtn}
+                onPress={() => setSharedValue("pickupAddress", "")}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="close-circle" size={20} color="#EF4444" />
+              </Pressable>
             </Pressable>
           ) : null}
           {addresses.map((item) => (
@@ -341,9 +371,17 @@ export default function AddRecordForm({
                   styles.addressText,
                   shared.pickupAddress === item.address && styles.addressTextActive,
                 ]}
+                numberOfLines={2}
               >
                 {item.address} {item.isPrimary && "(Primary)"}
               </Text>
+              <Pressable
+                style={styles.deleteAddressBtn}
+                onPress={() => handleRemoveAddress(item._id, item.address)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="close-circle" size={20} color="#EF4444" />
+              </Pressable>
             </Pressable>
           ))}
         </View>
@@ -408,12 +446,69 @@ export default function AddRecordForm({
         </View>
       </Modal>
 
+      {/* Delete Address Confirmation Modal */}
+      <Modal
+        visible={deleteModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (!deletingLoading) setDeleteModalVisible(false);
+        }}
+      >
+        <View style={styles.modalOverlayAddress}>
+          <View style={styles.deleteModalCard}>
+            <View style={styles.deleteIconContainer}>
+              <Ionicons name="trash-outline" size={26} color="#EF4444" />
+            </View>
+
+            <Text style={styles.deleteModalTitle}>{t("remove_location")}</Text>
+            <Text style={styles.deleteModalSubtitle}>
+              {t("remove_location_confirm")}
+            </Text>
+
+            {deletingAddress?.address ? (
+              <View style={styles.addressPreviewBox}>
+                <Ionicons name="location-outline" size={16} color={DARK_GLASS_THEME.electricBlue} style={{ marginTop: 2 }} />
+                <Text style={styles.addressPreviewText} numberOfLines={3}>
+                  {deletingAddress.address}
+                </Text>
+              </View>
+            ) : null}
+
+            <View style={styles.deleteModalButtons}>
+              <Pressable
+                style={[styles.deleteModalBtn, styles.deleteBtnCancel]}
+                onPress={() => setDeleteModalVisible(false)}
+                disabled={deletingLoading}
+              >
+                <Text style={styles.deleteBtnCancelText}>{t("cancel")}</Text>
+              </Pressable>
+
+              <Pressable
+                style={[styles.deleteModalBtn, styles.deleteBtnConfirm, deletingLoading && { opacity: 0.7 }]}
+                onPress={confirmDeleteAddress}
+                disabled={deletingLoading}
+              >
+                {deletingLoading ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons name="trash" size={15} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Text style={styles.deleteBtnConfirmText}>{t("remove")}</Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <Field label={t("pickup_city")} value={shared.pickupCity} onChangeText={(text: string) => setSharedValue("pickupCity", text)} error={sharedErrors.pickupCity} />
 
       {shipments.map((shipment, index) => (
         <View key={index} style={styles.shipmentCard}>
           <View style={styles.shipmentHeader}>
-            <Text style={styles.shipmentTitle}>{t("delivery_shipment")} {index + 1}</Text>
+            <Text style={styles.shipmentTitle}>{t("delivery_shipment")}{shipments.length > 1 ? ` ${index + 1}` : ""}</Text>
             {shipments.length > 1 && (
               <Pressable style={styles.removeButton} onPress={() => removeShipment(index)}>
                 <Ionicons name="close" size={18} color="#EF4444" />
@@ -502,11 +597,6 @@ export default function AddRecordForm({
           <Field label={t("notes_instructions")} value={shipment.notes} onChangeText={(text: string) => setShipmentValue(index, "notes", text)} multiline />
         </View>
       ))}
-
-      <Pressable style={styles.addMoreButton} onPress={addMoreShipment}>
-        <Ionicons name="add-circle-outline" size={20} color={DARK_GLASS_THEME.electricBlue} />
-        <Text style={styles.addMoreText}>{t("add_more_shipment")}</Text>
-      </Pressable>
 
       <View style={styles.buttonRow}>
         <Pressable style={styles.clearButton} onPress={clearForm} disabled={loading}>
@@ -1164,6 +1254,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     borderWidth: 1,
     borderColor: DARK_GLASS_THEME.border,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   addressItemActive: {
     backgroundColor: "rgba(79, 124, 255, 0.15)",
@@ -1173,10 +1266,17 @@ const styles = StyleSheet.create({
     color: DARK_GLASS_THEME.textPrimary,
     fontSize: 13,
     fontWeight: "600",
+    flex: 1,
+    marginRight: 8,
   },
   addressTextActive: {
     color: DARK_GLASS_THEME.electricBlue,
     fontWeight: "800",
+  },
+  deleteAddressBtn: {
+    padding: 2,
+    alignItems: "center",
+    justifyContent: "center",
   },
   addLocationBtn: {
     paddingVertical: 6,
@@ -1279,22 +1379,6 @@ const styles = StyleSheet.create({
   dateText: {
     color: DARK_GLASS_THEME.textPrimary,
     fontWeight: "700",
-  },
-  addMoreButton: {
-    minHeight: 48,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: DARK_GLASS_THEME.border,
-    backgroundColor: "rgba(79, 124, 255, 0.1)",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    marginBottom: 12,
-  },
-  addMoreText: {
-    color: DARK_GLASS_THEME.electricBlue,
-    fontWeight: "900",
   },
   buttonRow: {
     flexDirection: "row",
@@ -1404,6 +1488,95 @@ const styles = StyleSheet.create({
   },
   closeCalendarText: {
     color: DARK_GLASS_THEME.textPrimary,
+    fontWeight: "900",
+  },
+  deleteModalCard: {
+    width: "100%",
+    maxWidth: 380,
+    backgroundColor: DARK_GLASS_THEME.bgDarkBlue,
+    borderRadius: 24,
+    padding: 22,
+    borderWidth: 1.2,
+    borderColor: "rgba(239, 68, 68, 0.3)",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  deleteIconContainer: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: "rgba(239, 68, 68, 0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(239, 68, 68, 0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+  deleteModalTitle: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: DARK_GLASS_THEME.textPrimary,
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  deleteModalSubtitle: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: DARK_GLASS_THEME.textSecondary,
+    textAlign: "center",
+    marginBottom: 16,
+    lineHeight: 18,
+  },
+  addressPreviewBox: {
+    width: "100%",
+    flexDirection: "row",
+    gap: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderColor: DARK_GLASS_THEME.border,
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 20,
+  },
+  addressPreviewText: {
+    flex: 1,
+    color: DARK_GLASS_THEME.textPrimary,
+    fontSize: 13,
+    fontWeight: "700",
+    lineHeight: 18,
+  },
+  deleteModalButtons: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+  deleteModalBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+  },
+  deleteBtnCancel: {
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    borderWidth: 1,
+    borderColor: DARK_GLASS_THEME.border,
+  },
+  deleteBtnConfirm: {
+    backgroundColor: "#EF4444",
+  },
+  deleteBtnCancelText: {
+    color: DARK_GLASS_THEME.textPrimary,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  deleteBtnConfirmText: {
+    color: "#FFFFFF",
+    fontSize: 14,
     fontWeight: "900",
   },
 });
